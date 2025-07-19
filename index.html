@@ -27,19 +27,13 @@
             justify-content: center;
         }
         
-        .current-text {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
         .history-container {
             min-height: 100px;
             display: flex;
-            flex-direction: column-reverse;
+            flex-direction: column;
             align-items: center;
             justify-content: flex-end;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         
         .history-item {
@@ -48,6 +42,12 @@
             margin: 2px 0;
             transition: all 0.3s ease;
             text-align: center;
+        }
+        
+        .current-text {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
         }
         
         .input-container {
@@ -68,10 +68,10 @@
 </head>
 <body>
     <div class="header">
-        <div class="current-text" id="currentText">Алексей</div>
         <div class="history-container" id="historyContainer">
             <div class="history-item">---</div>
         </div>
+        <div class="current-text" id="currentText">Алексей</div>
     </div>
     
     <div class="input-container">
@@ -146,28 +146,22 @@
         });
         
         // Отслеживание истории
-        historyRef.limitToLast(5).on('value', (snapshot) => {
+        historyRef.limitToLast(7).on('value', (snapshot) => {
             const historyData = snapshot.val() || {};
             const historyItems = Object.values(historyData)
                 .sort((a, b) => b.timestamp - a.timestamp)
                 .map(item => item.text);
             
-            // Очищаем контейнер, но оставляем "---" внизу
-            historyContainer.innerHTML = '';
+            // Очищаем контейнер, но оставляем "---" вверху
+            historyContainer.innerHTML = '<div class="history-item">---</div>';
             
-            // Добавляем элементы истории
+            // Добавляем элементы истории (новые сверху)
             historyItems.forEach(text => {
                 const historyElement = document.createElement('div');
                 historyElement.className = 'history-item';
                 historyElement.textContent = text;
-                historyContainer.appendChild(historyElement);
+                historyContainer.insertBefore(historyElement, historyContainer.firstChild);
             });
-            
-            // Добавляем "---" в самый низ (будет внизу из-за column-reverse)
-            const placeholder = document.createElement('div');
-            placeholder.className = 'history-item';
-            placeholder.textContent = '---';
-            historyContainer.appendChild(placeholder);
         });
         
         // Фокусировка на поле ввода при загрузке
