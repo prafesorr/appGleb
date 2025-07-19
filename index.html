@@ -25,33 +25,35 @@
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             height: 100vh;
             width: 100vw;
-            overflow: hidden;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
             background-color: var(--tg-theme-bg-color, #f5f5f5);
             color: var(--tg-theme-text-color, #000);
+            -webkit-text-size-adjust: 100%;
             position: fixed;
         }
         
-        .main-container {
+        .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             width: 100%;
             padding: 0 15px;
             justify-content: center;
-            align-items: center;
+            overflow: hidden;
         }
         
         .history-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column-reverse;
-            justify-content: flex-end;
-            width: 100%;
+            position: absolute;
+            bottom: calc(50% + 60px);
+            left: 0;
+            right: 0;
+            padding: 0 15px;
             max-height: 30vh;
             overflow-y: auto;
-            padding-bottom: 20px;
+            display: flex;
+            flex-direction: column-reverse;
         }
         
         .history-item {
@@ -60,20 +62,33 @@
             margin: 3px 0;
             padding: 5px 0;
             text-align: center;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .current-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin: 20px 0;
         }
         
         .current-text {
             font-size: var(--current-font-size);
             font-weight: bold;
-            text-align: center;
-            margin: 20px 0;
             word-break: break-word;
+            text-align: center;
         }
         
-        .input-container {
+        .input-section {
+            padding: 15px;
             width: 100%;
-            padding: 15px 0;
-            margin-top: 20px;
+            flex-shrink: 0;
+            position: sticky;
+            bottom: 0;
+            background-color: var(--tg-theme-bg-color, #f5f5f5);
         }
         
         #textInput {
@@ -85,49 +100,51 @@
             background-color: var(--tg-theme-bg-color, #fff);
             color: var(--tg-theme-text-color, #000);
             min-height: 50px;
+            outline: none;
         }
         
-        .keyboard-dismiss {
+        .keyboard-dismiss-area {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: transparent;
-            z-index: 1;
+            z-index: 10;
             display: none;
+        }
+        
+        html, body {
+            overflow-x: hidden;
         }
     </style>
 </head>
 <body>
-    <div class="main-container">
-        <!-- История над основным текстом -->
+    <div class="keyboard-dismiss-area" id="dismissArea"></div>
+    
+    <div class="main-content">
         <div class="history-container" id="historyContainer"></div>
         
-        <!-- Основной текст по центру -->
-        <div class="current-text" id="currentText">Алексей</div>
+        <div class="current-section">
+            <div class="current-text" id="currentText">Алексей</div>
+        </div>
         
-        <!-- Поле ввода под текстом -->
-        <div class="input-container">
+        <div class="input-section">
             <input type="text" id="textInput" placeholder="Введите текст для замены" autocomplete="off">
         </div>
     </div>
-    
-    <div class="keyboard-dismiss" id="keyboardDismiss"></div>
 
     <script>
-        // Инициализация Telegram WebApp
+        // Инициализация Telegram WebApp без подтверждения закрытия
         if (window.Telegram?.WebApp) {
             const tg = window.Telegram.WebApp;
             tg.expand();
-        }
-
-        // Фикс высоты для iOS
-        function updateHeight() {
+            
+            // Фикс для iOS
             document.body.style.height = window.innerHeight + 'px';
+            window.addEventListener('resize', () => {
+                document.body.style.height = window.innerHeight + 'px';
+            });
         }
-        window.addEventListener('resize', updateHeight);
-        updateHeight();
 
         // Firebase
         const firebaseConfig = {
@@ -149,19 +166,33 @@
         const currentText = document.getElementById('currentText');
         const historyContainer = document.getElementById('historyContainer');
         const textInput = document.getElementById('textInput');
-        const keyboardDismiss = document.getElementById('keyboardDismiss');
+        const dismissArea = document.getElementById('dismissArea');
         
-        // Управление клавиатурой
+        // Фиксированное положение при открытии клавиатуры
         textInput.addEventListener('focus', () => {
-            keyboardDismiss.style.display = 'block';
+            dismissArea.style.display = 'block';
+            // Предотвращаем поднятие контента
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${window.scrollY}px`;
         });
         
-        keyboardDismiss.addEventListener('click', () => {
+        dismissArea.addEventListener('click', () => {
             textInput.blur();
+            dismissArea.style.display = 'none';
+            // Восстанавливаем прокрутку
+            const scrollY = document.body.style.top;
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.overflow = '';
+            window.scrollTo(0, parseInt(scrollY || '0') * -1);
         });
         
         textInput.addEventListener('blur', () => {
-            keyboardDismiss.style.display = 'none';
+            dismissArea.style.display = 'none';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.overflow = '';
         });
         
         // Отправка текста
@@ -189,11 +220,8 @@
             });
         }
         
-        textInput.addEventListener('keypress', e => {
-            if (e.key === 'Enter') submitText();
-        });
+        textInput.addEventListener('keypress', e => e.key === 'Enter' && submitText());
         
-        // Обновление интерфейса
         currentRef.on('value', snapshot => {
             const text = snapshot.val()?.text;
             currentText.textContent = text ? `Алексей ${text}` : "Алексей";
@@ -214,7 +242,6 @@
             });
         });
         
-        // Фокус на поле ввода
         textInput.focus();
     </script>
 </body>
