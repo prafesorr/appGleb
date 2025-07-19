@@ -8,142 +8,79 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        :root {
-            --current-font-size: 2.2rem;
-            --history-font-size: 1.3rem;
-            --button-color: var(--tg-theme-button-color, #2ea6ff);
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
         body {
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             height: 100vh;
-            width: 100vw;
-            overflow-x: hidden;
+            margin: 0;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             background-color: var(--tg-theme-bg-color, #f5f5f5);
             color: var(--tg-theme-text-color, #000);
-            -webkit-text-size-adjust: 100%;
-            position: fixed;
-        }
-        
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            padding: 0 15px;
-            justify-content: center;
             overflow: hidden;
         }
         
-        .history-container {
-            position: absolute;
-            bottom: calc(50% + 60px);
-            left: 0;
-            right: 0;
-            padding: 0 15px;
+        .history {
+            flex: 1;
             max-height: 30vh;
             overflow-y: auto;
             display: flex;
             flex-direction: column-reverse;
+            margin-bottom: 10px;
         }
         
         .history-item {
-            font-size: var(--history-font-size);
+            font-size: 1.3rem;
             opacity: 0.6;
-            margin: 3px 0;
+            text-align: center;
             padding: 5px 0;
-            text-align: center;
-            transition: all 0.3s ease;
-            width: 100%;
         }
         
-        .current-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin: 20px 0;
-        }
-        
-        .current-text {
-            font-size: var(--current-font-size);
+        .current {
+            font-size: 2.2rem;
             font-weight: bold;
-            word-break: break-word;
             text-align: center;
+            margin: 20px 0;
+            word-break: break-word;
         }
         
-        .input-section {
-            padding: 15px;
-            width: 100%;
-            flex-shrink: 0;
-            position: sticky;
-            bottom: 0;
-            background-color: var(--tg-theme-bg-color, #f5f5f5);
+        .input {
+            padding: 15px 0;
         }
         
         #textInput {
             width: 100%;
             padding: 15px;
-            border: 2px solid var(--button-color);
+            border: 2px solid var(--tg-theme-button-color, #2ea6ff);
             border-radius: 12px;
             font-size: 1.1rem;
-            background-color: var(--tg-theme-bg-color, #fff);
-            color: var(--tg-theme-text-color, #000);
             min-height: 50px;
-            outline: none;
         }
         
-        .keyboard-dismiss-area {
+        .dismiss {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            z-index: 10;
+            background: transparent;
             display: none;
-        }
-        
-        html, body {
-            overflow-x: hidden;
         }
     </style>
 </head>
 <body>
-    <div class="keyboard-dismiss-area" id="dismissArea"></div>
+    <div class="dismiss" id="dismiss"></div>
     
-    <div class="main-content">
-        <div class="history-container" id="historyContainer"></div>
-        
-        <div class="current-section">
-            <div class="current-text" id="currentText">Алексей</div>
-        </div>
-        
-        <div class="input-section">
-            <input type="text" id="textInput" placeholder="Введите текст для замены" autocomplete="off">
-        </div>
+    <div class="history" id="history"></div>
+    <div class="current" id="current">Алексей</div>
+    <div class="input">
+        <input type="text" id="textInput" placeholder="Введите текст для замены">
     </div>
 
     <script>
-        // Инициализация Telegram WebApp без подтверждения закрытия
+        // Telegram WebApp
         if (window.Telegram?.WebApp) {
-            const tg = window.Telegram.WebApp;
-            tg.expand();
-            
-            // Фикс для iOS
-            document.body.style.height = window.innerHeight + 'px';
-            window.addEventListener('resize', () => {
-                document.body.style.height = window.innerHeight + 'px';
-            });
+            window.Telegram.WebApp.expand();
         }
 
         // Firebase
@@ -158,91 +95,54 @@
         };
 
         const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const currentRef = database.ref('current');
-        const historyRef = database.ref('history');
+        const db = firebase.database();
+        const currentRef = db.ref('current');
+        const historyRef = db.ref('history');
         
-        // Элементы
-        const currentText = document.getElementById('currentText');
-        const historyContainer = document.getElementById('historyContainer');
-        const textInput = document.getElementById('textInput');
-        const dismissArea = document.getElementById('dismissArea');
+        // Elements
+        const current = document.getElementById('current');
+        const history = document.getElementById('history');
+        const input = document.getElementById('textInput');
+        const dismiss = document.getElementById('dismiss');
         
-        // Фиксированное положение при открытии клавиатуры
-        textInput.addEventListener('focus', () => {
-            dismissArea.style.display = 'block';
-            // Предотвращаем поднятие контента
-            document.body.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${window.scrollY}px`;
-        });
+        // Keyboard control
+        input.addEventListener('focus', () => dismiss.style.display = 'block');
+        dismiss.addEventListener('click', () => input.blur());
+        input.addEventListener('blur', () => dismiss.style.display = 'none');
         
-        dismissArea.addEventListener('click', () => {
-            textInput.blur();
-            dismissArea.style.display = 'none';
-            // Восстанавливаем прокрутку
-            const scrollY = document.body.style.top;
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.overflow = '';
-            window.scrollTo(0, parseInt(scrollY || '0') * -1);
-        });
-        
-        textInput.addEventListener('blur', () => {
-            dismissArea.style.display = 'none';
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.overflow = '';
-        });
-        
-        // Отправка текста
-        function submitText() {
-            const newText = textInput.value.trim();
-            if (!newText) return;
-            
-            currentRef.once('value').then(snapshot => {
-                const oldText = snapshot.val()?.text;
-                
-                if (oldText) {
-                    historyRef.push({
-                        text: oldText,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
+        // Submit text
+        input.addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                const text = input.value.trim();
+                if (text) {
+                    currentRef.once('value', snap => {
+                        const old = snap.val()?.text;
+                        if (old) historyRef.push({ text: old, timestamp: Date.now() });
+                        currentRef.set({ text: text, timestamp: Date.now() });
+                        input.value = '';
+                        input.blur();
                     });
                 }
-                
-                currentRef.set({
-                    text: newText,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-                
-                textInput.value = '';
-                textInput.blur();
-            });
-        }
-        
-        textInput.addEventListener('keypress', e => e.key === 'Enter' && submitText());
-        
-        currentRef.on('value', snapshot => {
-            const text = snapshot.val()?.text;
-            currentText.textContent = text ? `Алексей ${text}` : "Алексей";
+            }
         });
         
-        historyRef.limitToLast(5).on('value', snapshot => {
-            historyContainer.innerHTML = '';
-            
-            const historyItems = Object.values(snapshot.val() || {})
-                .sort((a, b) => b.timestamp - a.timestamp)
-                .map(item => item.text);
-            
-            historyItems.forEach(text => {
-                const item = document.createElement('div');
-                item.className = 'history-item';
-                item.textContent = text;
-                historyContainer.appendChild(item);
+        // Update UI
+        currentRef.on('value', snap => {
+            current.textContent = `Алексей ${snap.val()?.text || ''}`.trim();
+        });
+        
+        historyRef.limitToLast(5).on('value', snap => {
+            history.innerHTML = '';
+            const items = Object.values(snap.val() || {}).sort((a,b) => b.timestamp - a.timestamp);
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.textContent = item.text;
+                history.appendChild(div);
             });
         });
         
-        textInput.focus();
+        input.focus();
     </script>
 </body>
 </html>
