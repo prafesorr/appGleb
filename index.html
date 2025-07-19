@@ -41,11 +41,12 @@
             width: 100%;
             padding: 0 15px;
             justify-content: center;
+            overflow: hidden;
         }
         
         .history-container {
             position: absolute;
-            bottom: calc(50% + 70px); /* Располагаем над центральным текстом */
+            bottom: calc(50% + 60px);
             left: 0;
             right: 0;
             padding: 0 15px;
@@ -85,6 +86,9 @@
             padding: 15px;
             width: 100%;
             flex-shrink: 0;
+            position: sticky;
+            bottom: 0;
+            background-color: var(--tg-theme-bg-color, #f5f5f5);
         }
         
         #textInput {
@@ -99,7 +103,6 @@
             outline: none;
         }
         
-        /* Область для закрытия клавиатуры */
         .keyboard-dismiss-area {
             position: fixed;
             top: 0;
@@ -110,41 +113,31 @@
             display: none;
         }
         
-        /* Запрет горизонтального скролла */
         html, body {
             overflow-x: hidden;
-        }
-        /* */
-        html, body {
-            overflow-y: hidden;
         }
     </style>
 </head>
 <body>
-    <!-- Область для закрытия клавиатуры -->
     <div class="keyboard-dismiss-area" id="dismissArea"></div>
     
     <div class="main-content">
-        <!-- История (растет вверх от центра) -->
         <div class="history-container" id="historyContainer"></div>
         
-        <!-- Центральный блок с текстом -->
         <div class="current-section">
             <div class="current-text" id="currentText">Алексей</div>
         </div>
         
-        <!-- Поле ввода (под текстом) -->
         <div class="input-section">
             <input type="text" id="textInput" placeholder="Введите текст для замены" autocomplete="off">
         </div>
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
+        // Инициализация Telegram WebApp без подтверждения закрытия
         if (window.Telegram?.WebApp) {
             const tg = window.Telegram.WebApp;
             tg.expand();
-            tg.enableClosingConfirmation();
             
             // Фикс для iOS
             document.body.style.height = window.innerHeight + 'px';
@@ -175,18 +168,31 @@
         const textInput = document.getElementById('textInput');
         const dismissArea = document.getElementById('dismissArea');
         
-        // Обработка клавиатуры
+        // Фиксированное положение при открытии клавиатуры
         textInput.addEventListener('focus', () => {
             dismissArea.style.display = 'block';
+            // Предотвращаем поднятие контента
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${window.scrollY}px`;
         });
         
         dismissArea.addEventListener('click', () => {
             textInput.blur();
             dismissArea.style.display = 'none';
+            // Восстанавливаем прокрутку
+            const scrollY = document.body.style.top;
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.overflow = '';
+            window.scrollTo(0, parseInt(scrollY || '0') * -1);
         });
         
         textInput.addEventListener('blur', () => {
             dismissArea.style.display = 'none';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.overflow = '';
         });
         
         // Отправка текста
@@ -214,10 +220,8 @@
             });
         }
         
-        // Обработчики
         textInput.addEventListener('keypress', e => e.key === 'Enter' && submitText());
         
-        // Обновление интерфейса
         currentRef.on('value', snapshot => {
             const text = snapshot.val()?.text;
             currentText.textContent = text ? `Алексей ${text}` : "Алексей";
@@ -227,7 +231,7 @@
             historyContainer.innerHTML = '';
             
             const historyItems = Object.values(snapshot.val() || {})
-                .sort((a, b) => b.timestamp - a.timestamp) // Новые сверху
+                .sort((a, b) => b.timestamp - a.timestamp)
                 .map(item => item.text);
             
             historyItems.forEach(text => {
@@ -238,7 +242,6 @@
             });
         });
         
-        // Фокус на поле ввода
         textInput.focus();
     </script>
 </body>
