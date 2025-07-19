@@ -1,199 +1,167 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Telegram Chat App</title>
+    <title>Alexey Board</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-        }
-        .container {
-            padding: 12px;
-            max-width: 100%;
-            box-sizing: border-box;
-        }
-        #messages {
-            margin-bottom: 12px;
-            height: calc(100vh - 120px);
-            overflow-y: auto;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            background-color: var(--tg-theme-bg-color, #f5f5f5);
+            color: var(--tg-theme-text-color, #000);
+            text-align: center;
         }
-        .message {
-            max-width: 80%;
-            padding: 8px 12px;
-            border-radius: 12px;
-            word-wrap: break-word;
+        
+        .header {
+            padding: 20px;
+            position: relative;
         }
-        .incoming {
-            align-self: flex-start;
-            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+        
+        .current-text {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
         }
-        .outgoing {
-            align-self: flex-end;
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-        }
-        .input-area {
-            display: flex;
-            gap: 8px;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 12px;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            box-shadow: 0 -1px 3px rgba(0,0,0,0.1);
-        }
-        #messageInput {
+        
+        .history {
             flex-grow: 1;
-            padding: 10px 12px;
-            border: 1px solid var(--tg-theme-hint-color, #999999);
-            border-radius: 20px;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
+            overflow-y: auto;
+            padding: 10px 20px;
+            display: flex;
+            flex-direction: column-reverse;
         }
-        #sendButton {
-            padding: 10px 16px;
-            background-color: var(--tg-theme-button-color, #2481cc);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
+        
+        .history-item {
+            padding: 8px;
+            margin: 4px 0;
+            opacity: 0.6;
+            transition: all 0.3s ease;
         }
-        .message-time {
-            font-size: 0.75em;
-            opacity: 0.7;
-            margin-top: 4px;
-            text-align: right;
+        
+        .input-container {
+            padding: 15px;
+            border-top: 1px solid var(--tg-theme-secondary-bg-color, #e0e0e0);
+        }
+        
+        #textInput {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--tg-theme-button-color, #2ea6ff);
+            border-radius: 12px;
+            font-size: 16px;
+            background-color: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
+        }
+        
+        .hint {
+            margin-top: 8px;
+            font-size: 14px;
+            color: var(--tg-theme-hint-color, #999);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div id="messages"></div>
+    <div class="header">
+        <div class="current-text" id="currentText">Алексей ---</div>
     </div>
-    <div class="input-area">
-        <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
-        <button id="sendButton" onclick="sendMessage()">Send</button>
+    
+    <div class="history" id="historyContainer"></div>
+    
+    <div class="input-container">
+        <input type="text" id="textInput" placeholder="Введите текст для замены ---" autocomplete="off">
     </div>
 
     <script>
         // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.enableClosingConfirmation();
         
-        // Получаем данные пользователя
-        const user = tg.initDataUnsafe.user || {};
-        const userId = user.id || 'anonymous_' + Math.random().toString(36).substr(2, 9);
-        const userName = user.first_name || 'Anonymous';
-        const userAvatar = user.photo_url || null;
-
-        // Ваша конфигурация Firebase
+        // Конфигурация Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyD-zuX1QURRDFkSCzosLFiFzkKDD-DZ57s",
             authDomain: "tgapp-d7890.firebaseapp.com",
             databaseURL: "https://tgapp-d7890-default-rtdb.firebaseio.com",
             projectId: "tgapp-d7890",
-            storageBucket: "tgapp-d7890.firebasestorage.app",
+            storageBucket: "tgapp-d7890.appspot.com",
             messagingSenderId: "149623476831",
-            appId: "1:149623476831:web:2d34584d13c19292a041ea",
-            measurementId: "G-V3Y4RFGDBM"
+            appId: "1:149623476831:web:2d34584d13c19292a041ea"
         };
 
         // Инициализация Firebase
         const app = firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        const messagesRef = database.ref('messages');
-
-        // Функция отправки сообщения
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const messageText = input.value.trim();
-            
-            if (messageText) {
-                const newMessage = {
-                    text: messageText,
-                    userId: userId,
-                    userName: userName,
-                    userAvatar: userAvatar,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                };
-                
-                messagesRef.push(newMessage)
-                    .then(() => {
-                        input.value = '';
-                    })
-                    .catch(error => {
-                        console.error("Error sending message:", error);
-                        alert("Failed to send message");
-                    });
-            }
-        }
-
-        // Отображение сообщений
-        messagesRef.on('value', (snapshot) => {
-            const messagesContainer = document.getElementById('messages');
-            messagesContainer.innerHTML = '';
-            
-            const messagesData = snapshot.val() || {};
-            
-            // Преобразуем в массив и сортируем по времени
-            const messages = Object.entries(messagesData)
-                .map(([id, msg]) => ({ id, ...msg }))
-                .sort((a, b) => a.timestamp - b.timestamp);
-            
-            // Отображаем каждое сообщение
-            messages.forEach(msg => {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${msg.userId === userId ? 'outgoing' : 'incoming'}`;
-                
-                let messageContent = `<div>${msg.text}</div>`;
-                
-                if (msg.userId !== userId && msg.userName) {
-                    messageContent = `<strong>${msg.userName}:</strong> ${messageContent}`;
-                }
-                
-                // Добавляем время сообщения
-                const messageTime = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                messageContent += `<div class="message-time">${messageTime}</div>`;
-                
-                messageDiv.innerHTML = messageContent;
-                messagesContainer.appendChild(messageDiv);
-            });
-            
-            // Прокручиваем вниз
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        });
-
-        // Отправка по нажатию Enter
-        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+        const currentRef = database.ref('current');
+        const historyRef = database.ref('history');
+        
+        // Элементы интерфейса
+        const currentText = document.getElementById('currentText');
+        const historyContainer = document.getElementById('historyContainer');
+        const textInput = document.getElementById('textInput');
+        
+        // Обработка ввода текста
+        textInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                sendMessage();
+                const newText = textInput.value.trim();
+                if (newText) {
+                    // Получаем текущий текст перед обновлением
+                    currentRef.once('value').then((snapshot) => {
+                        const currentData = snapshot.val();
+                        const oldText = currentData?.text || "---";
+                        
+                        // Если старый текст не был "---", добавляем в историю
+                        if (oldText !== "---") {
+                            historyRef.push({
+                                text: oldText,
+                                timestamp: firebase.database.ServerValue.TIMESTAMP
+                            });
+                        }
+                        
+                        // Обновляем текущий текст
+                        currentRef.set({
+                            text: newText,
+                            timestamp: firebase.database.ServerValue.TIMESTAMP
+                        });
+                        
+                        textInput.value = '';
+                    });
+                }
             }
         });
-
+        
+        // Отслеживание текущего текста
+        currentRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data?.text) {
+                currentText.textContent = `Алексей ${data.text}`;
+            } else {
+                currentText.textContent = "Алексей ---";
+            }
+        });
+        
+        // Отслеживание истории
+        historyRef.limitToLast(10).on('value', (snapshot) => {
+            historyContainer.innerHTML = '';
+            const historyData = snapshot.val() || {};
+            
+            Object.entries(historyData)
+                .map(([id, item]) => ({ id, ...item }))
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .forEach(item => {
+                    const historyElement = document.createElement('div');
+                    historyElement.className = 'history-item';
+                    historyElement.textContent = `Алексей ${item.text}`;
+                    historyContainer.appendChild(historyElement);
+                });
+        });
+        
         // Фокусировка на поле ввода при загрузке
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('messageInput').focus();
-        });
-
-        // Проверка соединения с Firebase
-        const connectionRef = database.ref('.info/connected');
-        connectionRef.on('value', (snap) => {
-            if (snap.val() !== true) {
-                console.log('No Firebase connection');
-            }
-        });
+        textInput.focus();
     </script>
 </body>
 </html>
