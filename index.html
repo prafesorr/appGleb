@@ -14,23 +14,32 @@
             --button-color: var(--tg-theme-button-color, #2ea6ff);
         }
         
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             height: 100vh;
+            width: 100vw;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
             background-color: var(--tg-theme-bg-color, #f5f5f5);
             color: var(--tg-theme-text-color, #000);
             -webkit-text-size-adjust: 100%;
+            position: fixed;
         }
         
-        .header {
-            padding: 15px;
+        .content {
             flex: 1;
             display: flex;
             flex-direction: column;
+            width: 100%;
+            padding: 0 15px;
         }
         
         .history-container {
@@ -39,8 +48,9 @@
             flex-direction: column;
             justify-content: flex-end;
             padding: 10px 0;
-            max-height: 40vh;
+            max-height: 30vh;
             overflow-y: auto;
+            width: 100%;
         }
         
         .history-item {
@@ -50,21 +60,27 @@
             padding: 5px 0;
             text-align: center;
             transition: all 0.3s ease;
+            width: 100%;
         }
         
         .current-container {
-            margin: 20px 0;
+            margin: 10px 0;
             text-align: center;
+            width: 100%;
         }
         
         .current-text {
             font-size: var(--current-font-size);
             font-weight: bold;
+            word-break: break-word;
         }
         
         .input-container {
             padding: 15px;
-            border-top: 1px solid var(--tg-theme-secondary-bg-color, #e0e0e0);
+            width: 100%;
+            position: sticky;
+            bottom: 0;
+            background-color: var(--tg-theme-bg-color, #f5f5f5);
         }
         
         #textInput {
@@ -76,11 +92,21 @@
             background-color: var(--tg-theme-bg-color, #fff);
             color: var(--tg-theme-text-color, #000);
             min-height: 50px;
+            outline: none;
+        }
+        
+        /* Запрет горизонтального скролла */
+        html, body {
+            overflow-x: hidden;
+        }
+        body {
+            position: fixed;
+            width: 100%;
         }
     </style>
 </head>
 <body>
-    <div class="header">
+    <div class="content">
         <div class="history-container" id="historyContainer">
             <!-- История будет здесь -->
         </div>
@@ -99,6 +125,12 @@
             const tg = window.Telegram.WebApp;
             tg.expand();
             tg.enableClosingConfirmation();
+            
+            // Фикс для iOS
+            document.body.style.height = window.innerHeight + 'px';
+            window.addEventListener('resize', () => {
+                document.body.style.height = window.innerHeight + 'px';
+            });
         }
 
         // Firebase
@@ -156,7 +188,7 @@
             currentText.textContent = text ? `Алексей ${text}` : "Алексей";
         });
         
-        historyRef.limitToLast(5).on('value', snapshot => {
+        historyRef.limitToLast(20).on('value', snapshot => {
             historyContainer.innerHTML = '';
             
             const historyItems = Object.values(snapshot.val() || {})
@@ -178,6 +210,13 @@
         
         // Фокус на поле ввода
         textInput.focus();
+        
+        // Фикс для iOS (предотвращение скролла за пределы)
+        document.body.addEventListener('touchmove', function(e) {
+            if (document.body.scrollHeight <= window.innerHeight) {
+                e.preventDefault();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>
