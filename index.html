@@ -1,62 +1,199 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Простой чат</title>
+    <title>Telegram Chat App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: Arial; padding: 10px; }
-        #messages { margin: 10px 0; border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
-        input, button { padding: 8px; margin-top: 5px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        .container {
+            padding: 12px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        #messages {
+            margin-bottom: 12px;
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .message {
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 12px;
+            word-wrap: break-word;
+        }
+        .incoming {
+            align-self: flex-start;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+        }
+        .outgoing {
+            align-self: flex-end;
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+        }
+        .input-area {
+            display: flex;
+            gap: 8px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            box-shadow: 0 -1px 3px rgba(0,0,0,0.1);
+        }
+        #messageInput {
+            flex-grow: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--tg-theme-hint-color, #999999);
+            border-radius: 20px;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+        }
+        #sendButton {
+            padding: 10px 16px;
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .message-time {
+            font-size: 0.75em;
+            opacity: 0.7;
+            margin-top: 4px;
+            text-align: right;
+        }
     </style>
 </head>
 <body>
-    <h2>Простой чат</h2>
-    <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="Напиши что-нибудь...">
-    <button onclick="sendMessage()">Отправить</button>
+    <div class="container">
+        <div id="messages"></div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+        <button id="sendButton" onclick="sendMessage()">Send</button>
+    </div>
 
     <script>
         // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Раскрываем приложение на весь экран
+        tg.expand();
+        tg.enableClosingConfirmation();
         
-        // Здесь будут храниться сообщения
-        let messages = [];
-        
-        // Функция для отправки сообщения
+        // Получаем данные пользователя
+        const user = tg.initDataUnsafe.user || {};
+        const userId = user.id || 'anonymous_' + Math.random().toString(36).substr(2, 9);
+        const userName = user.first_name || 'Anonymous';
+        const userAvatar = user.photo_url || null;
+
+        // Ваша конфигурация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-zuX1QURRDFkSCzosLFiFzkKDD-DZ57s",
+            authDomain: "tgapp-d7890.firebaseapp.com",
+            databaseURL: "https://tgapp-d7890-default-rtdb.firebaseio.com",
+            projectId: "tgapp-d7890",
+            storageBucket: "tgapp-d7890.firebasestorage.app",
+            messagingSenderId: "149623476831",
+            appId: "1:149623476831:web:2d34584d13c19292a041ea",
+            measurementId: "G-V3Y4RFGDBM"
+        };
+
+        // Инициализация Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const messagesRef = database.ref('messages');
+
+        // Функция отправки сообщения
         function sendMessage() {
             const input = document.getElementById('messageInput');
-            const message = input.value.trim();
+            const messageText = input.value.trim();
             
-            if (message) {
-                // Добавляем сообщение в массив
-                messages.push({
-                    text: message,
-                    user: tg.initDataUnsafe.user?.first_name || "Аноним"
-                });
+            if (messageText) {
+                const newMessage = {
+                    text: messageText,
+                    userId: userId,
+                    userName: userName,
+                    userAvatar: userAvatar,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                };
                 
-                // Очищаем поле ввода
-                input.value = '';
-                
-                // Обновляем отображение сообщений
-                updateMessages();
+                messagesRef.push(newMessage)
+                    .then(() => {
+                        input.value = '';
+                    })
+                    .catch(error => {
+                        console.error("Error sending message:", error);
+                        alert("Failed to send message");
+                    });
             }
         }
-        
-        // Функция для отображения сообщений
-        function updateMessages() {
-            const container = document.getElementById('messages');
-            container.innerHTML = '';
+
+        // Отображение сообщений
+        messagesRef.on('value', (snapshot) => {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = '';
             
+            const messagesData = snapshot.val() || {};
+            
+            // Преобразуем в массив и сортируем по времени
+            const messages = Object.entries(messagesData)
+                .map(([id, msg]) => ({ id, ...msg }))
+                .sort((a, b) => a.timestamp - b.timestamp);
+            
+            // Отображаем каждое сообщение
             messages.forEach(msg => {
-                const div = document.createElement('div');
-                div.innerHTML = `<b>${msg.user}:</b> ${msg.text}`;
-                container.appendChild(div);
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.userId === userId ? 'outgoing' : 'incoming'}`;
+                
+                let messageContent = `<div>${msg.text}</div>`;
+                
+                if (msg.userId !== userId && msg.userName) {
+                    messageContent = `<strong>${msg.userName}:</strong> ${messageContent}`;
+                }
+                
+                // Добавляем время сообщения
+                const messageTime = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                messageContent += `<div class="message-time">${messageTime}</div>`;
+                
+                messageDiv.innerHTML = messageContent;
+                messagesContainer.appendChild(messageDiv);
             });
-        }
-        
-        // Инициализация при загрузке
-        updateMessages();
+            
+            // Прокручиваем вниз
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
+
+        // Отправка по нажатию Enter
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Фокусировка на поле ввода при загрузке
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('messageInput').focus();
+        });
+
+        // Проверка соединения с Firebase
+        const connectionRef = database.ref('.info/connected');
+        connectionRef.on('value', (snap) => {
+            if (snap.val() !== true) {
+                console.log('No Firebase connection');
+            }
+        });
     </script>
 </body>
 </html>
