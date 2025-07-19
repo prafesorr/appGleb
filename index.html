@@ -31,17 +31,16 @@
             background-color: var(--tg-theme-bg-color, #f5f5f5);
             color: var(--tg-theme-text-color, #000);
             position: fixed;
-            top: 0;
-            left: 0;
         }
         
-        .scroll-container {
+        .main-container {
             flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            padding: 0 15px;
             display: flex;
             flex-direction: column;
+            width: 100%;
+            padding: 0 15px;
+            justify-content: center;
+            align-items: center;
         }
         
         .history-container {
@@ -49,7 +48,9 @@
             display: flex;
             flex-direction: column-reverse;
             justify-content: flex-end;
-            min-height: calc(100vh - 200px);
+            width: 100%;
+            max-height: 30vh;
+            overflow-y: auto;
             padding-bottom: 20px;
         }
         
@@ -59,27 +60,20 @@
             margin: 3px 0;
             padding: 5px 0;
             text-align: center;
-            transition: all 0.3s ease;
-        }
-        
-        .current-section {
-            margin: 20px 0;
-            text-align: center;
-            flex-shrink: 0;
         }
         
         .current-text {
             font-size: var(--current-font-size);
             font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
             word-break: break-word;
         }
         
-        .input-section {
-            padding: 15px;
-            position: sticky;
-            bottom: 0;
-            background-color: var(--tg-theme-bg-color, #f5f5f5);
-            z-index: 2;
+        .input-container {
+            width: 100%;
+            padding: 15px 0;
+            margin-top: 20px;
         }
         
         #textInput {
@@ -106,14 +100,15 @@
     </style>
 </head>
 <body>
-    <div class="scroll-container">
+    <div class="main-container">
+        <!-- История над основным текстом -->
         <div class="history-container" id="historyContainer"></div>
         
-        <div class="current-section">
-            <div class="current-text" id="currentText">Алексей</div>
-        </div>
+        <!-- Основной текст по центру -->
+        <div class="current-text" id="currentText">Алексей</div>
         
-        <div class="input-section">
+        <!-- Поле ввода под текстом -->
+        <div class="input-container">
             <input type="text" id="textInput" placeholder="Введите текст для замены" autocomplete="off">
         </div>
     </div>
@@ -121,11 +116,10 @@
     <div class="keyboard-dismiss" id="keyboardDismiss"></div>
 
     <script>
-        // Инициализация Telegram WebApp без подтверждения закрытия
+        // Инициализация Telegram WebApp
         if (window.Telegram?.WebApp) {
             const tg = window.Telegram.WebApp;
             tg.expand();
-            tg.BackButton.hide();
         }
 
         // Фикс высоты для iOS
@@ -156,13 +150,10 @@
         const historyContainer = document.getElementById('historyContainer');
         const textInput = document.getElementById('textInput');
         const keyboardDismiss = document.getElementById('keyboardDismiss');
-        const scrollContainer = document.querySelector('.scroll-container');
         
         // Управление клавиатурой
         textInput.addEventListener('focus', () => {
             keyboardDismiss.style.display = 'block';
-            // Фиксируем скролл
-            scrollContainer.style.overflow = 'hidden';
         });
         
         keyboardDismiss.addEventListener('click', () => {
@@ -171,7 +162,6 @@
         
         textInput.addEventListener('blur', () => {
             keyboardDismiss.style.display = 'none';
-            scrollContainer.style.overflow = 'auto';
         });
         
         // Отправка текста
