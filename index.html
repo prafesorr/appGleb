@@ -20,44 +20,34 @@
         .header {
             padding: 20px;
             position: relative;
+            text-align: center;
+            flex-grow: 1;
             display: flex;
+            flex-direction: column;
             justify-content: center;
-            align-items: center;
-            min-height: 120px;
-        }
-        
-        .current-container {
-            display: flex;
-            align-items: center;
-            gap: 20px;
         }
         
         .current-text {
             font-size: 24px;
             font-weight: bold;
-            margin: 10px 0;
-            text-align: center;
+            margin-bottom: 10px;
         }
         
-        .history {
-            max-height: 100px;
-            overflow-y: auto;
+        .history-container {
+            min-height: 100px;
             display: flex;
-            flex-direction: column;
-            gap: 4px;
-            opacity: 0.6;
-            font-size: 14px;
-            text-align: left;
-            padding-left: 20px;
-            border-left: 1px solid var(--tg-theme-secondary-bg-color, #e0e0e0);
+            flex-direction: column-reverse;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 20px;
         }
         
         .history-item {
-            padding: 2px 0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 200px;
+            font-size: 16px;
+            opacity: 0.5;
+            margin: 2px 0;
+            transition: all 0.3s ease;
+            text-align: center;
         }
         
         .input-container {
@@ -74,19 +64,13 @@
             background-color: var(--tg-theme-bg-color, #fff);
             color: var(--tg-theme-text-color, #000);
         }
-        
-        .hint {
-            margin-top: 8px;
-            font-size: 14px;
-            color: var(--tg-theme-hint-color, #999);
-        }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="current-container">
-            <div class="current-text" id="currentText">Алексей ---</div>
-            <div class="history" id="historyContainer"></div>
+        <div class="current-text" id="currentText">Алексей</div>
+        <div class="history-container" id="historyContainer">
+            <div class="history-item">---</div>
         </div>
     </div>
     
@@ -157,24 +141,33 @@
             if (data?.text) {
                 currentText.textContent = `Алексей ${data.text}`;
             } else {
-                currentText.textContent = "Алексей ---";
+                currentText.textContent = "Алексей";
             }
         });
         
         // Отслеживание истории
         historyRef.limitToLast(5).on('value', (snapshot) => {
-            historyContainer.innerHTML = '';
             const historyData = snapshot.val() || {};
-            
-            Object.entries(historyData)
-                .map(([id, item]) => ({ id, ...item }))
+            const historyItems = Object.values(historyData)
                 .sort((a, b) => b.timestamp - a.timestamp)
-                .forEach(item => {
-                    const historyElement = document.createElement('div');
-                    historyElement.className = 'history-item';
-                    historyElement.textContent = item.text;
-                    historyContainer.appendChild(historyElement);
-                });
+                .map(item => item.text);
+            
+            // Очищаем контейнер, но оставляем "---" внизу
+            historyContainer.innerHTML = '';
+            
+            // Добавляем элементы истории
+            historyItems.forEach(text => {
+                const historyElement = document.createElement('div');
+                historyElement.className = 'history-item';
+                historyElement.textContent = text;
+                historyContainer.appendChild(historyElement);
+            });
+            
+            // Добавляем "---" в самый низ (будет внизу из-за column-reverse)
+            const placeholder = document.createElement('div');
+            placeholder.className = 'history-item';
+            placeholder.textContent = '---';
+            historyContainer.appendChild(placeholder);
         });
         
         // Фокусировка на поле ввода при загрузке
