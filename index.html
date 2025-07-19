@@ -40,17 +40,19 @@
             flex-direction: column;
             width: 100%;
             padding: 0 15px;
+            justify-content: center;
         }
         
         .history-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column-reverse;
-            justify-content: flex-end;
-            padding-bottom: 20px;
+            position: absolute;
+            bottom: calc(50% + 100px); /* Располагаем над центральным текстом */
+            left: 0;
+            right: 0;
+            padding: 0 15px;
             max-height: 30vh;
             overflow-y: auto;
-            width: 100%;
+            display: flex;
+            flex-direction: column-reverse;
         }
         
         .history-item {
@@ -97,6 +99,17 @@
             outline: none;
         }
         
+        /* Область для закрытия клавиатуры */
+        .keyboard-dismiss-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+            display: none;
+        }
+        
         /* Запрет горизонтального скролла */
         html, body {
             overflow-x: hidden;
@@ -104,8 +117,11 @@
     </style>
 </head>
 <body>
+    <!-- Область для закрытия клавиатуры -->
+    <div class="keyboard-dismiss-area" id="dismissArea"></div>
+    
     <div class="main-content">
-        <!-- История (растет вверх) -->
+        <!-- История (растет вверх от центра) -->
         <div class="history-container" id="historyContainer"></div>
         
         <!-- Центральный блок с текстом -->
@@ -153,6 +169,21 @@
         const currentText = document.getElementById('currentText');
         const historyContainer = document.getElementById('historyContainer');
         const textInput = document.getElementById('textInput');
+        const dismissArea = document.getElementById('dismissArea');
+        
+        // Обработка клавиатуры
+        textInput.addEventListener('focus', () => {
+            dismissArea.style.display = 'block';
+        });
+        
+        dismissArea.addEventListener('click', () => {
+            textInput.blur();
+            dismissArea.style.display = 'none';
+        });
+        
+        textInput.addEventListener('blur', () => {
+            dismissArea.style.display = 'none';
+        });
         
         // Отправка текста
         function submitText() {
@@ -175,7 +206,7 @@
                 });
                 
                 textInput.value = '';
-                textInput.blur(); // Закрываем клавиатуру
+                textInput.blur();
             });
         }
         
