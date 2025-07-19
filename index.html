@@ -125,7 +125,7 @@
         <div class="history-container" id="historyContainer"></div>
         
         <div class="current-section">
-            <div class="current-text" id="currentText">Алексей</div>
+            <div class="current-text" id="currentText">Глеб</div>
         </div>
         
         <div class="input-section">
@@ -224,7 +224,7 @@
         
         currentRef.on('value', snapshot => {
             const text = snapshot.val()?.text;
-            currentText.textContent = text ? `Алексей ${text}` : "Алексей";
+            currentText.textContent = text ? `Глеб ${text}` : "Глеб";
         });
         
         historyRef.limitToLast(5).on('value', snapshot => {
