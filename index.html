@@ -75,6 +75,7 @@
             max-height: 30vh;
             overflow: hidden;
             margin-bottom: 5px;
+            touch-action: pan-y;
         }
         
         .history-container {
@@ -85,7 +86,6 @@
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
-            touch-action: pan-y;
         }
         
         .history-container::-webkit-scrollbar {
@@ -97,14 +97,16 @@
             opacity: 0.6;
             margin: 2px 0;
             padding: 8px 0;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             text-align: left;
             user-select: none;
             -webkit-user-select: none;
+            transform-origin: left center;
         }
         
         .history-item:active {
             opacity: 1;
+            transform: scale(0.98);
         }
         
         .current-text {
@@ -206,32 +208,17 @@
         let shouldScrollToBottom = true;
         let isUserScrolling = false;
         let scrollTimeout;
-        let touchStartY = 0;
-        let isTouchMoving = false;
+        let lastTapTime = 0;
+        let lastTapY = 0;
 
         // Управление клавиатурой
         textInput.addEventListener('focus', () => {
             dismissArea.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${window.scrollY}px`;
         });
         
         dismissArea.addEventListener('click', () => {
             textInput.blur();
             dismissArea.style.display = 'none';
-            const scrollY = document.body.style.top;
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.overflow = '';
-            window.scrollTo(0, parseInt(scrollY || '0') * -1);
-        });
-        
-        textInput.addEventListener('blur', () => {
-            dismissArea.style.display = 'none';
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.overflow = '';
         });
         
         // Отправка текста
@@ -279,13 +266,6 @@
                     });
                     shouldScrollToBottom = true;
                 }
-            }).catch(error => {
-                console.error("Ошибка при проверке настроек:", error);
-                currentRef.set({
-                    text: text,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-                shouldScrollToBottom = true;
             });
         }
         
@@ -302,34 +282,24 @@
             }, 100);
         });
         
-        // Обработка касаний для скролла и кликов
-        historyContainer.addEventListener('touchstart', (e) => {
-            touchStartY = e.touches[0].clientY;
-            isTouchMoving = false;
-        }, { passive: true });
-        
-        historyContainer.addEventListener('touchmove', (e) => {
-            if (Math.abs(e.touches[0].clientY - touchStartY) > 5) {
-                isTouchMoving = true;
+        // Обработка кликов/тапов
+        historyContainer.addEventListener('click', (e) => {
+            const now = Date.now();
+            const y = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            // Игнорируем быстрые двойные тапы (чтобы не мешали скроллу)
+            if (now - lastTapTime < 300 && Math.abs(y - lastTapY) < 10) {
+                return;
             }
-        }, { passive: true });
-        
-        historyContainer.addEventListener('touchend', (e) => {
-            if (!isTouchMoving) {
-                const target = e.target.closest('.history-item');
-                if (target) {
-                    restoreMessage(target.textContent);
-                }
+            
+            lastTapTime = now;
+            lastTapY = y;
+            
+            const item = e.target.closest('.history-item');
+            if (item) {
+                restoreMessage(item.textContent);
             }
-            isTouchMoving = false;
-        }, { passive: true });
-        
-        // Прокрутка к низу при необходимости
-        function scrollToBottomIfNeeded() {
-            if (shouldScrollToBottom && !isUserScrolling) {
-                historyContainer.scrollTop = historyContainer.scrollHeight;
-            }
-        }
+        });
         
         // Обработка истории
         currentRef.on('value', snapshot => {
@@ -360,7 +330,6 @@
                 const historyItem = document.createElement('div');
                 historyItem.className = 'history-item';
                 historyItem.textContent = item.text;
-                historyItem.dataset.id = item.id;
                 historyContainer.appendChild(historyItem);
             });
             
