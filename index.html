@@ -32,6 +32,7 @@
             color: var(--tg-theme-text-color, #000);
             -webkit-text-size-adjust: 100%;
             position: fixed;
+            touch-action: pan-y; /* Разрешаем вертикальный скролл */
         }
         
         .main-content {
@@ -78,6 +79,8 @@
             overflow-y: auto;
             margin-bottom: 5px;
             scrollbar-width: none; /* Firefox */
+            -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+            overscroll-behavior: contain; /* Предотвращаем pull-to-refresh */
         }
         
         .history-container::-webkit-scrollbar {
@@ -88,14 +91,22 @@
             font-size: var(--history-font-size);
             opacity: 0.6;
             margin: 2px 0;
-            padding: 2px 0;
+            padding: 8px 0; /* Увеличиваем область касания */
             transition: all 0.3s ease;
             text-align: left;
             cursor: pointer;
+            user-select: none; /* Предотвращаем выделение текста */
+            -webkit-user-select: none;
+            touch-action: manipulation; /* Оптимизация для касаний */
         }
         
         .history-item:hover {
             opacity: 0.9;
+        }
+        
+        .history-item:active {
+            opacity: 1;
+            transform: scale(0.98);
         }
         
         .current-text {
@@ -202,7 +213,6 @@
         // Фиксированное положение при открытии клавиатуры
         textInput.addEventListener('focus', () => {
             dismissArea.style.display = 'block';
-            // Предотвращаем поднятие контента
             document.body.style.overflow = 'hidden';
             document.body.style.position = 'fixed';
             document.body.style.top = `-${window.scrollY}px`;
@@ -211,7 +221,6 @@
         dismissArea.addEventListener('click', () => {
             textInput.blur();
             dismissArea.style.display = 'none';
-            // Восстанавливаем прокрутку
             const scrollY = document.body.style.top;
             document.body.style.position = '';
             document.body.style.top = '';
@@ -235,7 +244,6 @@
                 const oldText = snapshot.val()?.text;
                 
                 if (oldText) {
-                    // Получаем информацию о пользователе из Telegram WebApp
                     const user = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
                     
                     historyRef.push({
@@ -269,7 +277,7 @@
             this.value = this.value.toLowerCase();
         });
         
-        // Восстановление старого сообщения по клику
+        // Восстановление старого сообщения
         function restoreMessage(text) {
             currentRef.set({
                 text: text,
@@ -298,28 +306,48 @@
                 historyItem.className = 'history-item';
                 historyItem.textContent = item.text;
                 historyItem.dataset.id = item.id;
-                historyItem.addEventListener('click', () => {
+                
+                // Добавляем обработчики для корректной работы на touch-устройствах
+                historyItem.addEventListener('click', (e) => {
+                    e.preventDefault();
                     restoreMessage(item.text);
                 });
+                
+                historyItem.addEventListener('touchstart', (e) => {
+                    e.currentTarget.style.opacity = '1';
+                }, { passive: true });
+                
+                historyItem.addEventListener('touchend', (e) => {
+                    e.currentTarget.style.opacity = '';
+                    restoreMessage(item.text);
+                }, { passive: true });
+                
                 historyContainer.appendChild(historyItem);
             });
         });
         
-        // Прокрутка истории при касании
-        let startY;
+        // Оптимизация скролла на мобильных устройствах
         let isScrolling = false;
+        let startY = 0;
+        let scrollTop = 0;
         
         historyContainer.addEventListener('touchstart', (e) => {
-            startY = e.touches[0].clientY;
+            startY = e.touches[0].pageY;
+            scrollTop = historyContainer.scrollTop;
             isScrolling = true;
         }, { passive: true });
         
         historyContainer.addEventListener('touchmove', (e) => {
             if (!isScrolling) return;
-            const y = e.touches[0].clientY;
-            const diff = startY - y;
+            const y = e.touches[0].pageY;
+            const walk = (y - startY);
             
-            if (Math.abs(diff) > 10) {
+            // Если скроллим вниз и контент уже вверху - предотвращаем
+            if (walk > 0 && historyContainer.scrollTop <= 0) {
+                e.preventDefault();
+            }
+            // Если скроллим вверх и контент уже внизу - предотвращаем
+            else if (walk < 0 && historyContainer.scrollTop >= historyContainer.scrollHeight - historyContainer.offsetHeight) {
                 e.preventDefault();
             }
         }, { passive: false });
