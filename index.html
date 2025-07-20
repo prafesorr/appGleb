@@ -276,8 +276,6 @@
                         text: text,
                         timestamp: firebase.database.ServerValue.TIMESTAMP
                     });
-                } else {
-                    alert('❌ Активация сообщений из истории отключена администратором');
                 }
             }).catch(error => {
                 console.error("Ошибка при проверке настроек:", error);
