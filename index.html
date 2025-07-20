@@ -11,10 +11,31 @@
         :root {
             --current-font-size: 2.2rem;
             --history-font-size: 1.3rem;
-            --button-color: var(--tg-theme-button-color, #6C5CE7);
+            
+            /* Светлая тема по умолчанию */
+            --button-color: #6C5CE7;
             --accent-color: #FD79A8;
-            --bg-gradient-start: var(--tg-theme-bg-color, #f5f5f5);
+            --bg-color: #f5f5f5;
+            --bg-gradient-start: #f5f5f5;
             --bg-gradient-end: #f9f9f9;
+            --text-color: #2D3436;
+            --history-bg: rgba(255,255,255,0.7);
+            --history-item-bg: rgba(0,0,0,0.02);
+            --input-bg: #fff;
+            --underline-color: rgba(108, 92, 231, 0.3);
+        }
+        
+        .dark-theme {
+            --button-color: #A683FF;
+            --accent-color: #FF8E9E;
+            --bg-color: #1A1A1A;
+            --bg-gradient-start: #1A1A1A;
+            --bg-gradient-end: #2D2D2D;
+            --text-color: #F5F5F5;
+            --history-bg: rgba(30,30,30,0.9);
+            --history-item-bg: rgba(255,255,255,0.05);
+            --input-bg: #2D2D2D;
+            --underline-color: rgba(166, 131, 255, 0.3);
         }
         
         * {
@@ -32,10 +53,11 @@
             display: flex;
             flex-direction: column;
             background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
-            color: var(--tg-theme-text-color, #2D3436);
+            color: var(--text-color);
             -webkit-text-size-adjust: 100%;
             position: fixed;
             touch-action: pan-y;
+            transition: background 0.3s ease, color 0.3s ease;
         }
         
         .main-content {
@@ -85,9 +107,10 @@
             overflow: hidden;
             margin-bottom: 5px;
             touch-action: pan-y;
-            background: rgba(255,255,255,0.7);
+            background: var(--history-bg);
             border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: background 0.3s ease;
         }
         
         .history-container {
@@ -117,18 +140,18 @@
             -webkit-user-select: none;
             touch-action: manipulation;
             border-radius: 8px;
-            background: rgba(0,0,0,0.02);
+            background: var(--history-item-bg);
         }
         
         .history-item:hover {
             opacity: 0.9;
-            background: rgba(0,0,0,0.05);
+            background: rgba(108, 92, 231, 0.1);
         }
         
         .history-item:active {
             opacity: 1;
             transform: scale(0.98);
-            background: rgba(0,0,0,0.08);
+            background: rgba(108, 92, 231, 0.15);
         }
         
         .current-text {
@@ -169,8 +192,8 @@
             border: 2px solid var(--button-color);
             border-radius: 12px;
             font-size: 1.1rem;
-            background-color: var(--tg-theme-bg-color, #fff);
-            color: var(--tg-theme-text-color, #000);
+            background-color: var(--input-bg);
+            color: var(--text-color);
             min-height: 50px;
             outline: none;
             text-transform: lowercase;
@@ -232,15 +255,50 @@
             background: none;
             border: none;
             font-size: 1.2rem;
-            color: var(--tg-theme-text-color, #2D3436);
+            color: var(--text-color);
             opacity: 0.5;
             display: none;
             z-index: 11;
+            cursor: pointer;
+        }
+        
+        .theme-toggle {
+            position: absolute;
+            left: 15px;
+            top: 15px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--button-color);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 11;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+        
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        .theme-toggle svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
         }
     </style>
 </head>
 <body>
     <div class="decoration" id="decoration"></div>
+    <button class="theme-toggle" id="themeToggle">
+        <svg viewBox="0 0 24 24">
+            <path d="M12,18C11.11,18 10.26,17.8 9.5,17.45C11.56,16.5 13,14.42 13,12C13,9.58 11.56,7.5 9.5,6.55C10.26,6.2 11.11,6 12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31L23.31,12L20,8.69Z" />
+        </svg>
+    </button>
     <button class="close-btn" id="closeBtn">✕</button>
     <div class="keyboard-dismiss-area" id="dismissArea"></div>
     
@@ -287,6 +345,7 @@
         const currentRef = database.ref('current');
         const historyRef = database.ref('history');
         const settingsRef = database.ref('settings');
+        const userSettingsRef = database.ref('user_settings');
         
         // Элементы
         const currentText = document.getElementById('currentText');
@@ -295,11 +354,52 @@
         const dismissArea = document.getElementById('dismissArea');
         const decoration = document.getElementById('decoration');
         const closeBtn = document.getElementById('closeBtn');
+        const themeToggle = document.getElementById('themeToggle');
         
         // Переменные для управления скроллом
         let shouldScrollToBottom = true;
         let isUserScrolling = false;
         let scrollTimeout;
+        
+        // Текущая тема
+        let darkMode = false;
+        const userId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || 'default';
+
+        // Загрузка темы пользователя
+        function loadUserTheme() {
+            userSettingsRef.child(userId).child('theme').once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    darkMode = snapshot.val() === 'dark';
+                    updateTheme();
+                } else {
+                    // Проверка системных предпочтений
+                    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    if (prefersDark) {
+                        darkMode = true;
+                        updateTheme();
+                    }
+                }
+            });
+        }
+        
+        // Переключение темы
+        function toggleTheme() {
+            darkMode = !darkMode;
+            updateTheme();
+            // Сохраняем выбор пользователя
+            userSettingsRef.child(userId).child('theme').set(darkMode ? 'dark' : 'light');
+        }
+        
+        // Обновление темы
+        function updateTheme() {
+            if (darkMode) {
+                document.body.classList.add('dark-theme');
+                themeToggle.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A9,9 0 0,0 21,12A9,9 0 0,0 12,3Z" /></svg>';
+            } else {
+                document.body.classList.remove('dark-theme');
+                themeToggle.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12,18C11.11,18 10.26,17.8 9.5,17.45C11.56,16.5 13,14.42 13,12C13,9.58 11.56,7.5 9.5,6.55C10.26,6.2 11.11,6 12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31L23.31,12L20,8.69Z" /></svg>';
+            }
+        }
 
         // Создаем декоративные элементы
         function createDecorations() {
@@ -368,6 +468,10 @@
         
         // Инициализация декора
         createDecorations();
+        loadUserTheme();
+
+        // Обработчики событий
+        themeToggle.addEventListener('click', toggleTheme);
 
         // Управление клавиатурой
         textInput.addEventListener('focus', () => {
