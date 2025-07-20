@@ -81,14 +81,12 @@
         
         .history-container {
             display: flex;
-            flex-direction: column;
+            flex-direction: column-reverse; /* Новые сообщения добавляются снизу */
             max-height: 30vh;
-            overflow-y: scroll;
+            overflow-y: auto;
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
-            transform: translateZ(0); /* Аппаратное ускорение */
-            will-change: transform; /* Подготовка к анимации */
         }
         
         .history-container::-webkit-scrollbar {
@@ -212,6 +210,10 @@
         const textInput = document.getElementById('textInput');
         const dismissArea = document.getElementById('dismissArea');
         
+        // Переменная для отслеживания новых сообщений
+        let lastMessageTimestamp = 0;
+        let isInitialLoad = true;
+
         // Управление клавиатурой
         textInput.addEventListener('focus', () => {
             dismissArea.style.display = 'block';
@@ -295,33 +297,18 @@
             currentText.textContent = text ? text.toLowerCase() : "";
         });
         
-        // Функция для принудительной активации скролла
-        function activateScroll() {
-            historyContainer.style.overflowY = 'scroll';
-            setTimeout(() => {
-                historyContainer.scrollTop = 1;
-                setTimeout(() => {
-                    historyContainer.scrollTop = 0;
-                }, 50);
-            }, 50);
-        }
-        
-        // Инициализация скролла при загрузке
-        document.addEventListener('DOMContentLoaded', () => {
-            activateScroll();
-        });
-        
         historyRef.limitToLast(50).on('value', snapshot => {
-            historyContainer.innerHTML = '';
-            
-            if (!snapshot.exists()) {
-                activateScroll();
-                return;
-            }
+            if (!snapshot.exists()) return;
             
             const historyItems = [];
+            let hasNewMessages = false;
+            
             snapshot.forEach(childSnapshot => {
                 const item = childSnapshot.val();
+                if (item.timestamp > lastMessageTimestamp) {
+                    hasNewMessages = true;
+                    lastMessageTimestamp = item.timestamp;
+                }
                 historyItems.push({
                     id: childSnapshot.key,
                     text: item.text ? item.text.toLowerCase() : '',
@@ -329,7 +316,14 @@
                 });
             });
             
+            // Сортируем по времени (новые внизу)
             historyItems.sort((a, b) => a.timestamp - b.timestamp);
+            
+            // Сохраняем позицию скролла перед обновлением
+            const prevScrollHeight = historyContainer.scrollHeight;
+            const prevScrollTop = historyContainer.scrollTop;
+            
+            historyContainer.innerHTML = '';
             
             historyItems.forEach(item => {
                 const historyItem = document.createElement('div');
@@ -354,11 +348,23 @@
                 historyContainer.appendChild(historyItem);
             });
             
-            activateScroll();
-            
-            setTimeout(() => {
-                historyContainer.scrollTop = historyContainer.scrollHeight;
-            }, 100);
+            // Восстанавливаем позицию скролла или прокручиваем к новым сообщениям
+            if (isInitialLoad) {
+                // При первой загрузке прокручиваем вниз
+                setTimeout(() => {
+                    historyContainer.scrollTop = historyContainer.scrollHeight;
+                }, 50);
+                isInitialLoad = false;
+            } else if (hasNewMessages) {
+                // Если есть новые сообщения, прокручиваем к ним
+                setTimeout(() => {
+                    historyContainer.scrollTop = historyContainer.scrollHeight;
+                }, 50);
+            } else {
+                // Иначе сохраняем текущую позицию скролла
+                const scrollDiff = historyContainer.scrollHeight - prevScrollHeight;
+                historyContainer.scrollTop = prevScrollTop + scrollDiff;
+            }
         });
         
         // Инициализация
