@@ -3,29 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Alexey Board</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js?v=6"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=6"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js?v=6"></script>
     <style>
-        :root {
-            --current-font-size: 2.2rem;
-            --history-font-size: 1.3rem;
-            
-            /* Светлая тема по умолчанию */
+        .light-theme {
             --button-color: #6C5CE7;
             --accent-color: #FD79A8;
             --bg-color: #FFFFFF;
             --secondary-bg: #F5F5F5;
             --text-color: #2D3436;
             --secondary-text: #636E72;
-            --history-bg: #FFFFFF;
             --history-item-bg: rgba(0,0,0,0.05);
             --input-bg: #FFFFFF;
-            --border-color: rgba(0,0,0,0.1);
             --underline-color: rgba(108, 92, 231, 0.3);
             --shadow-color: rgba(0,0,0,0.1);
-            --bubble-color: rgba(108, 92, 231, 0.05);
         }
         
         .dark-theme {
@@ -35,13 +31,10 @@
             --secondary-bg: #121212;
             --text-color: #FFFFFF;
             --secondary-text: #B2BEC3;
-            --history-bg: #121212;
             --history-item-bg: rgba(255,255,255,0.08);
             --input-bg: #1E1E1E;
-            --border-color: rgba(255,255,255,0.1);
             --underline-color: rgba(166, 131, 255, 0.3);
             --shadow-color: rgba(0,0,0,0.3);
-            --bubble-color: rgba(166, 131, 255, 0.05);
         }
         
         * {
@@ -63,7 +56,6 @@
             -webkit-text-size-adjust: 100%;
             position: fixed;
             touch-action: pan-y;
-            transition: background-color 0.3s ease, color 0.3s ease;
         }
         
         .main-content {
@@ -87,7 +79,7 @@
         }
         
         .fixed-name {
-            font-size: var(--current-font-size);
+            font-size: 2.2rem;
             font-weight: bold;
             margin-right: 10px;
             flex-shrink: 0;
@@ -95,7 +87,6 @@
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            text-shadow: 0 2px 4px var(--shadow-color);
         }
         
         .text-column {
@@ -114,11 +105,6 @@
             overflow: hidden;
             margin-bottom: 5px;
             touch-action: pan-y;
-            background-color: var(--history-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 12px var(--shadow-color);
-            border: 1px solid var(--border-color);
-            transition: background-color 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
         }
         
         .history-container {
@@ -129,7 +115,7 @@
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
-            padding: 8px 12px;
+            padding: 8px 0;
         }
         
         .history-container::-webkit-scrollbar {
@@ -137,12 +123,12 @@
         }
         
         .history-item {
-            font-size: var(--history-font-size);
+            font-size: 1.3rem;
             color: var(--text-color);
             opacity: 0.8;
             margin: 2px 0;
             padding: 8px 12px;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             text-align: left;
             cursor: pointer;
             user-select: none;
@@ -152,18 +138,13 @@
             background-color: var(--history-item-bg);
         }
         
-        .history-item:hover {
-            opacity: 1;
-            background-color: rgba(108, 92, 231, 0.1);
-        }
-        
         .history-item:active {
             transform: scale(0.98);
             background-color: rgba(108, 92, 231, 0.15);
         }
         
         .current-text {
-            font-size: var(--current-font-size);
+            font-size: 2.2rem;
             font-weight: bold;
             word-break: break-word;
             text-align: left;
@@ -193,7 +174,6 @@
             bottom: 0;
             background-color: var(--bg-color);
             z-index: 2;
-            transition: background-color 0.3s ease;
         }
         
         #textInput {
@@ -208,12 +188,10 @@
             outline: none;
             text-transform: lowercase;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 8px var(--shadow-color);
         }
         
         #textInput:focus {
             border-color: var(--accent-color);
-            box-shadow: 0 2px 12px rgba(253, 121, 168, 0.2);
         }
         
         #textInput::placeholder {
@@ -229,55 +207,6 @@
             bottom: 0;
             z-index: 10;
             display: none;
-            background-color: rgba(0,0,0,0.01);
-        }
-        
-        /* Анимации */
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
-        }
-        
-        .floating-emoji {
-            position: fixed;
-            font-size: 24px;
-            opacity: 0;
-            z-index: 1;
-            pointer-events: none;
-            animation: float 3s ease-in-out infinite;
-        }
-        
-        /* Декоративные элементы */
-        .decoration {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            overflow: hidden;
-            z-index: 0;
-        }
-        
-        .bubble {
-            position: absolute;
-            border-radius: 50%;
-            background-color: var(--bubble-color);
-            opacity: 0.5;
-            transition: background-color 0.3s ease;
-        }
-        
-        .close-btn {
-            position: absolute;
-            right: 15px;
-            top: 15px;
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            color: var(--text-color);
-            opacity: 0.7;
-            display: none;
-            z-index: 11;
-            cursor: pointer;
-            transition: color 0.3s ease;
         }
         
         .theme-toggle {
@@ -295,34 +224,66 @@
             justify-content: center;
             cursor: pointer;
             z-index: 11;
-            box-shadow: 0 2px 8px var(--shadow-color);
-            transition: transform 0.3s ease, background 0.3s ease;
-        }
-        
-        .theme-toggle:active {
-            transform: scale(0.95);
         }
         
         .theme-toggle svg {
             width: 20px;
             height: 20px;
             fill: currentColor;
-            transition: transform 0.3s ease;
         }
         
-        .dark-theme .theme-toggle svg {
-            transform: rotate(180deg);
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .floating-emoji {
+            position: fixed;
+            font-size: 24px;
+            opacity: 0;
+            z-index: 1;
+            pointer-events: none;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .bottom-decoration {
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 0;
+        }
+        
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--button-color);
+            opacity: 0;
+            margin: 0 4px;
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        .pulse-dot:nth-child(1) { animation-delay: 0.1s; }
+        .pulse-dot:nth-child(2) { animation-delay: 0.3s; }
+        .pulse-dot:nth-child(3) { animation-delay: 0.5s; }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(0.8); opacity: 0.3; }
+            50% { transform: scale(1.2); opacity: 0.7; }
         }
     </style>
 </head>
-<body>
-    <div class="decoration" id="decoration"></div>
+<body class="light-theme">
     <button class="theme-toggle" id="themeToggle">
         <svg viewBox="0 0 24 24">
             <path d="M12,18C11.11,18 10.26,17.8 9.5,17.45C11.56,16.5 13,14.42 13,12C13,9.58 11.56,7.5 9.5,6.55C10.26,6.2 11.11,6 12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31L23.31,12L20,8.69Z" />
         </svg>
     </button>
-    <button class="close-btn" id="closeBtn">✕</button>
     <div class="keyboard-dismiss-area" id="dismissArea"></div>
     
     <div class="main-content">
@@ -341,7 +302,30 @@
         </div>
     </div>
 
+    <div class="bottom-decoration">
+        <div class="pulse-dot"></div>
+        <div class="pulse-dot"></div>
+        <div class="pulse-dot"></div>
+    </div>
+
     <script>
+        // Версия приложения для обхода кеширования
+        const APP_VERSION = '6';
+        
+        // Проверяем, нужно ли обновить страницу
+        if (localStorage.getItem('appVersion') !== APP_VERSION) {
+            localStorage.setItem('appVersion', APP_VERSION);
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) caches.delete(name);
+                });
+            }
+            window.location.reload(true);
+        }
+
+        // Сначала скрываем тело, чтобы не было мерцания
+        document.body.style.visibility = 'hidden';
+        
         // Инициализация Telegram WebApp
         if (window.Telegram?.WebApp) {
             const tg = window.Telegram.WebApp;
@@ -375,14 +359,7 @@
         const historyContainer = document.getElementById('historyContainer');
         const textInput = document.getElementById('textInput');
         const dismissArea = document.getElementById('dismissArea');
-        const decoration = document.getElementById('decoration');
-        const closeBtn = document.getElementById('closeBtn');
         const themeToggle = document.getElementById('themeToggle');
-        
-        // Переменные для управления скроллом
-        let shouldScrollToBottom = true;
-        let isUserScrolling = false;
-        let scrollTimeout;
         
         // Текущая тема
         let darkMode = false;
@@ -393,15 +370,17 @@
             userSettingsRef.child(userId).child('theme').once('value').then(snapshot => {
                 if (snapshot.exists()) {
                     darkMode = snapshot.val() === 'dark';
-                    updateTheme();
                 } else {
                     // Проверка системных предпочтений
                     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-                    if (prefersDark) {
-                        darkMode = true;
-                        updateTheme();
-                    }
+                    darkMode = prefersDark;
                 }
+                updateTheme();
+                // Теперь показываем тело
+                document.body.style.visibility = 'visible';
+            }).catch(() => {
+                // Если ошибка, все равно показываем тело
+                document.body.style.visibility = 'visible';
             });
         }
         
@@ -415,59 +394,15 @@
         
         // Обновление темы
         function updateTheme() {
-            if (darkMode) {
-                document.body.classList.add('dark-theme');
-                // Для телеграма
-                if (window.Telegram?.WebApp) {
-                    Telegram.WebApp.setHeaderColor('#000000');
-                    Telegram.WebApp.setBackgroundColor('#000000');
-                }
-            } else {
-                document.body.classList.remove('dark-theme');
-                // Для телеграма
-                if (window.Telegram?.WebApp) {
-                    Telegram.WebApp.setHeaderColor('#ffffff');
-                    Telegram.WebApp.setBackgroundColor('#ffffff');
-                }
+            document.body.className = darkMode ? 'dark-theme' : 'light-theme';
+            
+            // Для телеграма
+            if (window.Telegram?.WebApp) {
+                Telegram.WebApp.setHeaderColor(darkMode ? '#000000' : '#ffffff');
+                Telegram.WebApp.setBackgroundColor(darkMode ? '#000000' : '#ffffff');
             }
         }
 
-        // Создаем декоративные элементы
-        function createDecorations() {
-            // Создаем пузыри
-            for (let i = 0; i < 8; i++) {
-                const bubble = document.createElement('div');
-                bubble.className = 'bubble';
-                const size = Math.random() * 100 + 50;
-                bubble.style.width = `${size}px`;
-                bubble.style.height = `${size}px`;
-                bubble.style.left = `${Math.random() * 100}%`;
-                bubble.style.top = `${Math.random() * 100}%`;
-                bubble.style.background = `rgba(${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 255)}, 0.03)`;
-                decoration.appendChild(bubble);
-                
-                // Анимация пузырей
-                animateBubble(bubble);
-            }
-            
-            // Функция для анимации пузырей
-            function animateBubble(element) {
-                const duration = Math.random() * 20000 + 10000;
-                const xMovement = (Math.random() - 0.5) * 100;
-                const yMovement = (Math.random() - 0.5) * 100;
-                
-                element.animate([
-                    { transform: 'translate(0, 0)' },
-                    { transform: `translate(${xMovement}px, ${yMovement}px)` }
-                ], {
-                    duration: duration,
-                    iterations: Infinity,
-                    direction: 'alternate',
-                    easing: 'ease-in-out'
-                });
-            }
-        }
-        
         // Создаем анимированные эмодзи при отправке
         function createFloatingEmoji() {
             const emojis = ['✨', '🌟', '💬', '🖋️', '📝', '💭'];
@@ -496,10 +431,20 @@
                 element.remove();
             }, 2000);
         }
+
+        // Периодические анимации внизу экрана
+        function startIdleAnimations() {
+            // Случайные анимации каждые 5-10 секунд
+            setInterval(() => {
+                if (Math.random() > 0.1) {
+                    createFloatingEmoji();
+                }
+            }, 1500 + Math.random() * 1500);
+        }
         
-        // Инициализация декора
-        createDecorations();
+        // Инициализация
         loadUserTheme();
+        startIdleAnimations();
 
         // Обработчики событий
         themeToggle.addEventListener('click', toggleTheme);
@@ -507,19 +452,11 @@
         // Управление клавиатурой
         textInput.addEventListener('focus', () => {
             dismissArea.style.display = 'block';
-            closeBtn.style.display = 'block';
         });
         
         dismissArea.addEventListener('click', () => {
             textInput.blur();
             dismissArea.style.display = 'none';
-            closeBtn.style.display = 'none';
-        });
-        
-        closeBtn.addEventListener('click', () => {
-            textInput.blur();
-            dismissArea.style.display = 'none';
-            closeBtn.style.display = 'none';
         });
         
         // Отправка текста
@@ -552,7 +489,6 @@
                 });
         
                 textInput.value = '';
-                shouldScrollToBottom = true;
                 
                 // Создаем летающие эмодзи при отправке
                 for (let i = 0; i < 3; i++) {
@@ -572,33 +508,11 @@
                         text: text,
                         timestamp: firebase.database.ServerValue.TIMESTAMP
                     });
-                    shouldScrollToBottom = true;
                     
                     // Анимация при восстановлении
                     createFloatingEmoji();
                 }
             });
-        }
-        
-        // Обработка скролла
-        historyContainer.addEventListener('scroll', () => {
-            clearTimeout(scrollTimeout);
-            isUserScrolling = true;
-            
-            // Определяем, находится ли пользователь внизу
-            const isAtBottom = historyContainer.scrollHeight - historyContainer.scrollTop === historyContainer.clientHeight;
-            shouldScrollToBottom = isAtBottom;
-            
-            scrollTimeout = setTimeout(() => {
-                isUserScrolling = false;
-            }, 100);
-        });
-        
-        // Прокрутка к низу при необходимости
-        function scrollToBottomIfNeeded() {
-            if (shouldScrollToBottom && !isUserScrolling) {
-                historyContainer.scrollTop = historyContainer.scrollHeight;
-            }
         }
         
         // Обработка истории
@@ -622,9 +536,6 @@
             
             // Сортируем по времени (новые внизу)
             historyItems.sort((a, b) => a.timestamp - b.timestamp);
-            
-            // Сохраняем текущий скролл
-            const wasAtBottom = historyContainer.scrollHeight - historyContainer.scrollTop === historyContainer.clientHeight;
             
             historyContainer.innerHTML = '';
             
@@ -653,21 +564,14 @@
                 historyContainer.appendChild(historyItem);
             });
             
-            // Прокручиваем к низу при первом открытии или если пользователь был внизу
-            if (shouldScrollToBottom || wasAtBottom) {
-                setTimeout(() => {
-                    historyContainer.scrollTop = historyContainer.scrollHeight;
-                }, 50);
-            }
+            // Прокручиваем к низу
+            setTimeout(() => {
+                historyContainer.scrollTop = historyContainer.scrollHeight;
+            }, 50);
         });
         
         // Инициализация
         textInput.focus();
-        
-        // Первоначальная прокрутка к низу
-        setTimeout(() => {
-            historyContainer.scrollTop = historyContainer.scrollHeight;
-        }, 300);
     </script>
 </body>
 </html>
