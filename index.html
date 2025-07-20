@@ -229,27 +229,31 @@
         function submitText() {
             const newText = textInput.value.trim().toLowerCase();
             if (!newText) return;
-            
+    
+            const user = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
+            const username = user.username || 
+                        (user.first_name + (user.last_name ? ' ' + user.last_name : '')) || 
+                        'anonymous';
+    
             currentRef.once('value').then(snapshot => {
                 const oldText = snapshot.val()?.text;
-                
+        
                 if (oldText) {
-                    const user = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
                     historyRef.push({
                         text: oldText.toLowerCase(),
                         timestamp: firebase.database.ServerValue.TIMESTAMP,
                         user_id: user.id || 'unknown',
-                        username: user.username || 
-                             (user.first_name + (user.last_name ? ' ' + user.last_name : '')) || 
-                             'anonymous'
+                        username: username
                     });
                 }
-                
+        
                 currentRef.set({
                     text: newText,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    user_id: user.id || 'unknown',
+                    username: username
                 });
-                
+        
                 textInput.value = '';
                 shouldScrollToBottom = true;
             });
