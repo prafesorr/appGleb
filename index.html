@@ -86,7 +86,6 @@
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
-            transform: scaleY(-1); /* Инвертируем контейнер */
         }
         
         .history-container::-webkit-scrollbar {
@@ -104,7 +103,6 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
-            transform: scaleY(-1); /* Возвращаем правильную ориентацию элементам */
         }
         
         .history-item:hover {
@@ -113,7 +111,7 @@
         
         .history-item:active {
             opacity: 1;
-            transform: scaleY(-1) scale(0.98);
+            transform: scale(0.98);
         }
         
         .current-text {
@@ -203,6 +201,7 @@
         const database = firebase.database();
         const currentRef = database.ref('current');
         const historyRef = database.ref('history');
+        const settingsRef = database.ref('settings');
         
         // Элементы
         const currentText = document.getElementById('currentText');
@@ -270,10 +269,9 @@
         
         // Восстановление сообщения
         function restoreMessage(text) {
-            const settingsRef = database.ref('settings/enable_history_activation');
-            settingsRef.once('value').then(snapshot => {
+            settingsRef.child('enable_history_activation').once('value').then(snapshot => {
                 const isEnabled = snapshot.val();
-                if (isEnabled) {
+                if (isEnabled !== false) { // По умолчанию разрешено, если настройка не установлена
                     currentRef.set({
                         text: text,
                         timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -281,6 +279,13 @@
                 } else {
                     alert('❌ Активация сообщений из истории отключена администратором');
                 }
+            }).catch(error => {
+                console.error("Ошибка при проверке настроек:", error);
+                // Разрешаем по умолчанию, если произошла ошибка
+                currentRef.set({
+                    text: text,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
             });
         }
         
@@ -293,13 +298,20 @@
         historyRef.limitToLast(50).on('value', snapshot => {
             historyContainer.innerHTML = '';
             
-            const historyItems = Object.entries(snapshot.val() || {})
-                .sort((a, b) => b[1].timestamp - a[1].timestamp)
-                .map(([key, item]) => ({
-                    id: key,
+            if (!snapshot.exists()) return;
+            
+            const historyItems = [];
+            snapshot.forEach(childSnapshot => {
+                const item = childSnapshot.val();
+                historyItems.push({
+                    id: childSnapshot.key,
                     text: item.text ? item.text.toLowerCase() : '',
-                    timestamp: item.timestamp
-                }));
+                    timestamp: item.timestamp || 0
+                });
+            });
+            
+            // Сортируем по времени (новые внизу)
+            historyItems.sort((a, b) => a.timestamp - b.timestamp);
             
             historyItems.forEach(item => {
                 const historyItem = document.createElement('div');
@@ -324,14 +336,19 @@
                 historyContainer.appendChild(historyItem);
             });
             
-            // Автоматическая прокрутка к новым сообщениям
-            if (historyItems.length > 0) {
-                historyContainer.scrollTop = 0;
-            }
+            // Автоматическая прокрутка к новым сообщениям (вниз)
+            historyContainer.scrollTop = historyContainer.scrollHeight;
         });
         
         // Инициализация
         textInput.focus();
+        
+        // Убедимся, что настройка включена по умолчанию
+        settingsRef.child('enable_history_activation').once('value').then(snapshot => {
+            if (snapshot.val() === null) {
+                settingsRef.child('enable_history_activation').set(true);
+            }
+        });
     </script>
 </body>
 </html>
