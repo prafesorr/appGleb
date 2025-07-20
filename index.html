@@ -94,6 +94,7 @@
             word-break: break-word;
             text-align: left;
             min-height: 1.2em;
+            text-transform: lowercase;
         }
         
         .input-section {
@@ -115,6 +116,7 @@
             color: var(--tg-theme-text-color, #000);
             min-height: 50px;
             outline: none;
+            text-transform: lowercase;
         }
         
         .keyboard-dismiss-area {
@@ -213,41 +215,50 @@
         
         // Отправка текста
         function submitText() {
-            const newText = textInput.value.trim();
+            const newText = textInput.value.trim().toLowerCase(); // Преобразуем в нижний регистр
             if (!newText) return;
-    
+            
             currentRef.once('value').then(snapshot => {
                 const oldText = snapshot.val()?.text;
-        
+                
                 if (oldText) {
                     // Получаем информацию о пользователе из Telegram WebApp
                     const user = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
-            
+                    
                     historyRef.push({
-                        text: oldText,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP,
-                    user_id: user.id || 'unknown',
-                    username: user.username || 
-                         (user.first_name + (user.last_name ? ' ' + user.last_name : '')) || 
-                         'anonymous'
+                        text: oldText.toLowerCase(), // Сохраняем историю в нижнем регистре
+                        timestamp: firebase.database.ServerValue.TIMESTAMP,
+                        user_id: user.id || 'unknown',
+                        username: user.username || 
+                             (user.first_name + (user.last_name ? ' ' + user.last_name : '')) || 
+                             'anonymous'
+                    });
+                }
+                
+                currentRef.set({
+                    text: newText, // Уже в нижнем регистре
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                
+                textInput.value = '';
+                textInput.blur();
             });
         }
         
-        currentRef.set({
-            text: newText,
-            timestamp: firebase.database.ServerValue.TIMESTAMP
+        textInput.addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                submitText();
+            }
         });
         
-        textInput.value = '';
-        textInput.blur();
-    });
-}
-        
-        textInput.addEventListener('keypress', e => e.key === 'Enter' && submitText());
+        // Автоматическое преобразование вводимого текста в нижний регистр
+        textInput.addEventListener('input', function() {
+            this.value = this.value.toLowerCase();
+        });
         
         currentRef.on('value', snapshot => {
             const text = snapshot.val()?.text;
-            currentText.textContent = text || "";
+            currentText.textContent = text ? text.toLowerCase() : ""; // Отображаем в нижнем регистре
         });
         
         historyRef.limitToLast(5).on('value', snapshot => {
@@ -255,7 +266,7 @@
             
             const historyItems = Object.values(snapshot.val() || {})
                 .sort((a, b) => b.timestamp - a.timestamp)
-                .map(item => item.text);
+                .map(item => item.text ? item.text.toLowerCase() : ''); // История в нижнем регистре
             
             historyItems.forEach(text => {
                 const item = document.createElement('div');
