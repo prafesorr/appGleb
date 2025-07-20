@@ -213,7 +213,6 @@
         // Переменные для управления скроллом
         let shouldScrollToBottom = true;
         let isUserScrolling = false;
-        let lastScrollPosition = 0;
         let scrollTimeout;
 
         // Управление клавиатурой
@@ -226,11 +225,7 @@
             dismissArea.style.display = 'none';
         });
         
-        textInput.addEventListener('blur', () => {
-            dismissArea.style.display = 'none';
-        });
-        
-        // Отправка текста (без blur после отправки)
+        // Отправка текста
         function submitText() {
             const newText = textInput.value.trim().toLowerCase();
             if (!newText) return;
@@ -266,21 +261,13 @@
         // Восстановление сообщения
         function restoreMessage(text) {
             settingsRef.child('enable_history_activation').once('value').then(snapshot => {
-                const isEnabled = snapshot.val();
-                if (isEnabled !== false) {
+                if (snapshot.val() !== false) {
                     currentRef.set({
                         text: text,
                         timestamp: firebase.database.ServerValue.TIMESTAMP
                     });
                     shouldScrollToBottom = true;
                 }
-            }).catch(error => {
-                console.error("Ошибка при проверке настроек:", error);
-                currentRef.set({
-                    text: text,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-                shouldScrollToBottom = true;
             });
         }
         
@@ -365,13 +352,6 @@
         
         // Инициализация
         textInput.focus();
-        
-        // Убедимся, что настройка включена по умолчанию
-        settingsRef.child('enable_history_activation').once('value').then(snapshot => {
-            if (snapshot.val() === null) {
-                settingsRef.child('enable_history_activation').set(true);
-            }
-        });
         
         // Первоначальная прокрутка к низу
         setTimeout(() => {
