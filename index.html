@@ -81,7 +81,7 @@
         
         .history-container {
             display: flex;
-            flex-direction: column-reverse; /* Новые сообщения добавляются снизу */
+            flex-direction: column;
             max-height: 30vh;
             overflow-y: auto;
             scrollbar-width: none;
@@ -210,9 +210,11 @@
         const textInput = document.getElementById('textInput');
         const dismissArea = document.getElementById('dismissArea');
         
-        // Переменная для отслеживания новых сообщений
-        let lastMessageTimestamp = 0;
-        let isInitialLoad = true;
+        // Переменные для управления скроллом
+        let shouldScrollToBottom = true;
+        let isUserScrolling = false;
+        let lastScrollPosition = 0;
+        let scrollTimeout;
 
         // Управление клавиатурой
         textInput.addEventListener('focus', () => {
@@ -266,6 +268,7 @@
                 
                 textInput.value = '';
                 textInput.blur();
+                shouldScrollToBottom = true;
             });
         }
         
@@ -281,6 +284,7 @@
                         text: text,
                         timestamp: firebase.database.ServerValue.TIMESTAMP
                     });
+                    shouldScrollToBottom = true;
                 }
             }).catch(error => {
                 console.error("Ошибка при проверке настроек:", error);
@@ -288,7 +292,29 @@
                     text: text,
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
+                shouldScrollToBottom = true;
             });
+        }
+        
+        // Обработка скролла
+        historyContainer.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            isUserScrolling = true;
+            
+            // Определяем, находится ли пользователь внизу
+            const isAtBottom = historyContainer.scrollHeight - historyContainer.scrollTop === historyContainer.clientHeight;
+            shouldScrollToBottom = isAtBottom;
+            
+            scrollTimeout = setTimeout(() => {
+                isUserScrolling = false;
+            }, 100);
+        });
+        
+        // Прокрутка к низу при необходимости
+        function scrollToBottomIfNeeded() {
+            if (shouldScrollToBottom && !isUserScrolling) {
+                historyContainer.scrollTop = historyContainer.scrollHeight;
+            }
         }
         
         // Обработка истории
@@ -301,14 +327,8 @@
             if (!snapshot.exists()) return;
             
             const historyItems = [];
-            let hasNewMessages = false;
-            
             snapshot.forEach(childSnapshot => {
                 const item = childSnapshot.val();
-                if (item.timestamp > lastMessageTimestamp) {
-                    hasNewMessages = true;
-                    lastMessageTimestamp = item.timestamp;
-                }
                 historyItems.push({
                     id: childSnapshot.key,
                     text: item.text ? item.text.toLowerCase() : '',
@@ -319,9 +339,8 @@
             // Сортируем по времени (новые внизу)
             historyItems.sort((a, b) => a.timestamp - b.timestamp);
             
-            // Сохраняем позицию скролла перед обновлением
-            const prevScrollHeight = historyContainer.scrollHeight;
-            const prevScrollTop = historyContainer.scrollTop;
+            // Сохраняем текущий скролл
+            const wasAtBottom = historyContainer.scrollHeight - historyContainer.scrollTop === historyContainer.clientHeight;
             
             historyContainer.innerHTML = '';
             
@@ -331,39 +350,21 @@
                 historyItem.textContent = item.text;
                 historyItem.dataset.id = item.id;
                 
+                // Изменено: используем только клик для восстановления сообщения
                 historyItem.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    restoreMessage(item.text);
+                    if (!isUserScrolling) {
+                        restoreMessage(item.text);
+                    }
                 });
-                
-                historyItem.addEventListener('touchstart', (e) => {
-                    e.currentTarget.style.opacity = '1';
-                }, { passive: true });
-                
-                historyItem.addEventListener('touchend', (e) => {
-                    e.currentTarget.style.opacity = '';
-                    restoreMessage(item.text);
-                }, { passive: true });
                 
                 historyContainer.appendChild(historyItem);
             });
             
-            // Восстанавливаем позицию скролла или прокручиваем к новым сообщениям
-            if (isInitialLoad) {
-                // При первой загрузке прокручиваем вниз
+            // Прокручиваем к низу при первом открытии или если пользователь был внизу
+            if (shouldScrollToBottom || wasAtBottom) {
                 setTimeout(() => {
                     historyContainer.scrollTop = historyContainer.scrollHeight;
                 }, 50);
-                isInitialLoad = false;
-            } else if (hasNewMessages) {
-                // Если есть новые сообщения, прокручиваем к ним
-                setTimeout(() => {
-                    historyContainer.scrollTop = historyContainer.scrollHeight;
-                }, 50);
-            } else {
-                // Иначе сохраняем текущую позицию скролла
-                const scrollDiff = historyContainer.scrollHeight - prevScrollHeight;
-                historyContainer.scrollTop = prevScrollTop + scrollDiff;
             }
         });
         
@@ -376,6 +377,11 @@
                 settingsRef.child('enable_history_activation').set(true);
             }
         });
+        
+        // Первоначальная прокрутка к низу
+        setTimeout(() => {
+            historyContainer.scrollTop = historyContainer.scrollHeight;
+        }, 300);
     </script>
 </body>
 </html>
