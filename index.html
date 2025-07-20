@@ -11,12 +11,10 @@
         :root {
             --current-font-size: 2.2rem;
             --history-font-size: 1.3rem;
-            --button-color: var(--tg-theme-button-color, #2ea6ff);
-            --secondary-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            --hint-color: var(--tg-theme-hint-color, #7d7d7d);
-            --border-color: var(--tg-theme-secondary-bg-color, #e0e0e0);
-            --card-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --button-color: var(--tg-theme-button-color, #6C5CE7);
+            --accent-color: #FD79A8;
+            --bg-gradient-start: var(--tg-theme-bg-color, #f5f5f5);
+            --bg-gradient-end: #f9f9f9;
         }
         
         * {
@@ -33,12 +31,11 @@
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
-            background-color: var(--tg-theme-bg-color, #f5f5f5);
-            color: var(--tg-theme-text-color, #000);
+            background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+            color: var(--tg-theme-text-color, #2D3436);
             -webkit-text-size-adjust: 100%;
             position: fixed;
             touch-action: pan-y;
-            line-height: 1.5;
         }
         
         .main-content {
@@ -54,36 +51,22 @@
         .content-wrapper {
             display: flex;
             flex-direction: row;
-            align-items: flex-start;
+            align-items: center;
             width: 100%;
             position: relative;
             margin-bottom: 20px;
-            padding: 15px;
-            background-color: var(--secondary-color);
-            border-radius: 16px;
-            box-shadow: var(--card-shadow);
-            transition: var(--transition);
         }
         
         .fixed-name {
             font-size: var(--current-font-size);
             font-weight: bold;
-            margin-right: 15px;
+            margin-right: 10px;
             flex-shrink: 0;
-            color: var(--button-color);
-            position: relative;
-            padding-right: 15px;
-        }
-        
-        .fixed-name::after {
-            content: "";
-            position: absolute;
-            right: 0;
-            top: 5%;
-            height: 90%;
-            width: 2px;
-            background-color: var(--border-color);
-            border-radius: 2px;
+            background: linear-gradient(45deg, var(--button-color), var(--accent-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         
         .text-column {
@@ -100,20 +83,11 @@
             right: 0;
             max-height: 30vh;
             overflow: hidden;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
             touch-action: pan-y;
-            background-color: var(--secondary-color);
+            background: rgba(255,255,255,0.7);
             border-radius: 12px;
-            box-shadow: var(--card-shadow);
-            opacity: 0;
-            transform: translateY(10px);
-            transition: var(--transition);
-            z-index: 2;
-        }
-        
-        .history-container-wrapper.visible {
-            opacity: 1;
-            transform: translateY(0);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         
         .history-container {
@@ -124,7 +98,7 @@
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
-            padding: 8px 0;
+            padding: 8px 12px;
         }
         
         .history-container::-webkit-scrollbar {
@@ -133,32 +107,28 @@
         
         .history-item {
             font-size: var(--history-font-size);
-            color: var(--tg-theme-text-color);
-            margin: 0 12px;
-            padding: 10px 12px;
-            transition: var(--transition);
+            opacity: 0.7;
+            margin: 2px 0;
+            padding: 8px 12px;
+            transition: all 0.3s ease;
             text-align: left;
             cursor: pointer;
             user-select: none;
             -webkit-user-select: none;
             touch-action: manipulation;
             border-radius: 8px;
-            background-color: var(--tg-theme-bg-color);
-            margin-bottom: 6px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-        
-        .history-item:last-child {
-            margin-bottom: 0;
+            background: rgba(0,0,0,0.02);
         }
         
         .history-item:hover {
-            background-color: var(--border-color);
+            opacity: 0.9;
+            background: rgba(0,0,0,0.05);
         }
         
         .history-item:active {
+            opacity: 1;
             transform: scale(0.98);
-            background-color: var(--border-color);
+            background: rgba(0,0,0,0.08);
         }
         
         .current-text {
@@ -168,7 +138,19 @@
             text-align: left;
             min-height: 1.2em;
             text-transform: lowercase;
-            padding: 5px 0;
+            padding: 12px 0;
+            position: relative;
+        }
+        
+        .current-text::after {
+            content: '';
+            position: absolute;
+            bottom: 8px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--button-color), transparent);
+            opacity: 0.3;
         }
         
         .input-section {
@@ -177,62 +159,28 @@
             flex-shrink: 0;
             position: sticky;
             bottom: 0;
-            background-color: var(--tg-theme-bg-color);
-            border-top: 1px solid var(--border-color);
-        }
-        
-        .input-container {
-            position: relative;
-            width: 100%;
+            background: var(--bg-gradient-start);
+            z-index: 2;
         }
         
         #textInput {
             width: 100%;
-            padding: 15px 50px 15px 15px;
-            border: 2px solid var(--border-color);
+            padding: 15px;
+            border: 2px solid var(--button-color);
             border-radius: 12px;
             font-size: 1.1rem;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
+            background-color: var(--tg-theme-bg-color, #fff);
+            color: var(--tg-theme-text-color, #000);
             min-height: 50px;
             outline: none;
             text-transform: lowercase;
-            transition: var(--transition);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(108, 92, 231, 0.1);
         }
         
         #textInput:focus {
-            border-color: var(--button-color);
-            box-shadow: 0 0 0 2px rgba(46, 166, 255, 0.2);
-        }
-        
-        #textInput::placeholder {
-            color: var(--hint-color);
-            opacity: 0.7;
-        }
-        
-        .send-button {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background-color: var(--button-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            cursor: pointer;
-            opacity: 0;
-            pointer-events: none;
-            transition: var(--transition);
-        }
-        
-        #textInput:not(:placeholder-shown) + .send-button {
-            opacity: 1;
-            pointer-events: auto;
+            border-color: var(--accent-color);
+            box-shadow: 0 2px 12px rgba(253, 121, 168, 0.2);
         }
         
         .keyboard-dismiss-area {
@@ -243,35 +191,64 @@
             bottom: 0;
             z-index: 10;
             display: none;
-            background-color: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(2px);
         }
         
-        @media (max-width: 480px) {
-            :root {
-                --current-font-size: 1.8rem;
-                --history-font-size: 1.1rem;
-            }
-            
-            .content-wrapper {
-                padding: 12px;
-            }
-            
-            #textInput {
-                padding: 12px 45px 12px 12px;
-                min-height: 45px;
-            }
+        /* Анимации */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .floating-emoji {
+            position: fixed;
+            font-size: 24px;
+            opacity: 0;
+            z-index: 1;
+            pointer-events: none;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        /* Декоративные элементы */
+        .decoration {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+        
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(108, 92, 231, 0.05);
+            opacity: 0.5;
+        }
+        
+        .close-btn {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--tg-theme-text-color, #2D3436);
+            opacity: 0.5;
+            display: none;
+            z-index: 11;
         }
     </style>
 </head>
 <body>
+    <div class="decoration" id="decoration"></div>
+    <button class="close-btn" id="closeBtn">✕</button>
     <div class="keyboard-dismiss-area" id="dismissArea"></div>
     
     <div class="main-content">
         <div class="content-wrapper">
             <div class="fixed-name">Глеб</div>
             <div class="text-column">
-                <div class="history-container-wrapper" id="historyWrapper">
+                <div class="history-container-wrapper">
                     <div class="history-container" id="historyContainer"></div>
                 </div>
                 <div class="current-text" id="currentText"></div>
@@ -279,15 +256,7 @@
         </div>
         
         <div class="input-section">
-            <div class="input-container">
-                <input type="text" id="textInput" placeholder="что можно сказать про него?" autocomplete="off">
-                <button class="send-button" id="sendButton">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </button>
-            </div>
+            <input type="text" id="textInput" placeholder="что можно сказать про него?" autocomplete="off">
         </div>
     </div>
 
@@ -322,26 +291,100 @@
         // Элементы
         const currentText = document.getElementById('currentText');
         const historyContainer = document.getElementById('historyContainer');
-        const historyWrapper = document.getElementById('historyWrapper');
         const textInput = document.getElementById('textInput');
         const dismissArea = document.getElementById('dismissArea');
-        const sendButton = document.getElementById('sendButton');
+        const decoration = document.getElementById('decoration');
+        const closeBtn = document.getElementById('closeBtn');
         
         // Переменные для управления скроллом
         let shouldScrollToBottom = true;
         let isUserScrolling = false;
         let scrollTimeout;
 
+        // Создаем декоративные элементы
+        function createDecorations() {
+            // Создаем пузыри
+            for (let i = 0; i < 8; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                const size = Math.random() * 100 + 50;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                bubble.style.left = `${Math.random() * 100}%`;
+                bubble.style.top = `${Math.random() * 100}%`;
+                bubble.style.background = `rgba(${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 255)}, 0.03)`;
+                decoration.appendChild(bubble);
+                
+                // Анимация пузырей
+                animateBubble(bubble);
+            }
+            
+            // Функция для анимации пузырей
+            function animateBubble(element) {
+                const duration = Math.random() * 20000 + 10000;
+                const xMovement = (Math.random() - 0.5) * 100;
+                const yMovement = (Math.random() - 0.5) * 100;
+                
+                element.animate([
+                    { transform: 'translate(0, 0)' },
+                    { transform: `translate(${xMovement}px, ${yMovement}px)` }
+                ], {
+                    duration: duration,
+                    iterations: Infinity,
+                    direction: 'alternate',
+                    easing: 'ease-in-out'
+                });
+            }
+        }
+        
+        // Создаем анимированные эмодзи при отправке
+        function createFloatingEmoji() {
+            const emojis = ['✨', '🌟', '💬', '🖋️', '📝', '💭'];
+            const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+            
+            const element = document.createElement('div');
+            element.className = 'floating-emoji';
+            element.textContent = emoji;
+            element.style.left = `${Math.random() * 80 + 10}%`;
+            element.style.top = `${Math.random() * 30 + 60}%`;
+            element.style.fontSize = `${Math.random() * 20 + 16}px`;
+            document.body.appendChild(element);
+            
+            // Анимация появления и исчезновения
+            element.animate([
+                { opacity: 0, transform: 'translateY(20px)' },
+                { opacity: 1, transform: 'translateY(0)' },
+                { opacity: 0, transform: 'translateY(-40px)' }
+            ], {
+                duration: 2000,
+                easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)'
+            });
+            
+            // Удаляем после анимации
+            setTimeout(() => {
+                element.remove();
+            }, 2000);
+        }
+        
+        // Инициализация декора
+        createDecorations();
+
         // Управление клавиатурой
         textInput.addEventListener('focus', () => {
             dismissArea.style.display = 'block';
-            historyWrapper.classList.add('visible');
+            closeBtn.style.display = 'block';
         });
         
         dismissArea.addEventListener('click', () => {
             textInput.blur();
             dismissArea.style.display = 'none';
-            historyWrapper.classList.remove('visible');
+            closeBtn.style.display = 'none';
+        });
+        
+        closeBtn.addEventListener('click', () => {
+            textInput.blur();
+            dismissArea.style.display = 'none';
+            closeBtn.style.display = 'none';
         });
         
         // Отправка текста
@@ -375,21 +418,16 @@
         
                 textInput.value = '';
                 shouldScrollToBottom = true;
-                historyWrapper.classList.remove('visible');
+                
+                // Создаем летающие эмодзи при отправке
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(createFloatingEmoji, i * 300);
+                }
             });
         }
         
-        textInput.addEventListener('keypress', e => {
-            if (e.key === 'Enter') {
-                submitText();
-            }
-        });
-        
-        sendButton.addEventListener('click', submitText);
-        
-        textInput.addEventListener('input', function() { 
-            this.value = this.value.toLowerCase(); 
-        });
+        textInput.addEventListener('keypress', e => e.key === 'Enter' && submitText());
+        textInput.addEventListener('input', function() { this.value = this.value.toLowerCase(); });
         
         // Восстановление сообщения
         function restoreMessage(text) {
@@ -400,9 +438,9 @@
                         timestamp: firebase.database.ServerValue.TIMESTAMP
                     });
                     shouldScrollToBottom = true;
-                    textInput.blur();
-                    dismissArea.style.display = 'none';
-                    historyWrapper.classList.remove('visible');
+                    
+                    // Анимация при восстановлении
+                    createFloatingEmoji();
                 }
             });
         }
@@ -467,13 +505,13 @@
                 });
                 
                 historyItem.addEventListener('touchstart', (e) => {
-                    e.currentTarget.style.transform = 'scale(0.98)';
-                    e.currentTarget.style.backgroundColor = 'var(--border-color)';
+                    e.currentTarget.style.opacity = '1';
+                    e.currentTarget.style.background = 'rgba(108, 92, 231, 0.1)';
                 }, { passive: true });
                 
                 historyItem.addEventListener('touchend', (e) => {
-                    e.currentTarget.style.transform = '';
-                    e.currentTarget.style.backgroundColor = '';
+                    e.currentTarget.style.opacity = '';
+                    e.currentTarget.style.background = '';
                     restoreMessage(item.text);
                 }, { passive: true });
                 
