@@ -44,42 +44,56 @@
             overflow: hidden;
         }
         
+        .content-wrapper {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            width: 100%;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .fixed-name {
+            font-size: var(--current-font-size);
+            font-weight: bold;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .text-column {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            position: relative;
+        }
+        
         .history-container {
             position: absolute;
-            bottom: calc(50% + 70px);
+            bottom: 100%;
             left: 0;
             right: 0;
-            padding: 0 15px;
-            max-height: 30vh;
-            overflow-y: auto;
             display: flex;
             flex-direction: column-reverse;
+            max-height: 30vh;
+            overflow-y: auto;
+            margin-bottom: 5px;
         }
         
         .history-item {
             font-size: var(--history-font-size);
             opacity: 0.6;
-            margin: 3px 0;
-            padding: 5px 0;
-            text-align: center;
+            margin: 2px 0;
+            padding: 2px 0;
             transition: all 0.3s ease;
-            width: 100%;
-        }
-        
-        .current-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            margin: 20px 0;
+            text-align: left;
         }
         
         .current-text {
             font-size: var(--current-font-size);
             font-weight: bold;
             word-break: break-word;
-            text-align: center;
+            text-align: left;
+            min-height: 1.2em;
         }
         
         .input-section {
@@ -122,10 +136,12 @@
     <div class="keyboard-dismiss-area" id="dismissArea"></div>
     
     <div class="main-content">
-        <div class="history-container" id="historyContainer"></div>
-        
-        <div class="current-section">
-            <div class="current-text" id="currentText">Глеб</div>
+        <div class="content-wrapper">
+            <div class="fixed-name">Глеб</div>
+            <div class="text-column">
+                <div class="history-container" id="historyContainer"></div>
+                <div class="current-text" id="currentText"></div>
+            </div>
         </div>
         
         <div class="input-section">
@@ -224,7 +240,7 @@
         
         currentRef.on('value', snapshot => {
             const text = snapshot.val()?.text;
-            currentText.textContent = text ? `Глеб ${text}` : "Глеб";
+            currentText.textContent = text || "";
         });
         
         historyRef.limitToLast(5).on('value', snapshot => {
