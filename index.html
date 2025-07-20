@@ -32,6 +32,7 @@
             color: var(--tg-theme-text-color, #000);
             -webkit-text-size-adjust: 100%;
             position: fixed;
+            touch-action: pan-y;
         }
         
         .main-content {
@@ -97,11 +98,16 @@
             opacity: 0.6;
             margin: 2px 0;
             padding: 8px 0;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             text-align: left;
+            cursor: pointer;
             user-select: none;
             -webkit-user-select: none;
-            transform-origin: left center;
+            touch-action: manipulation;
+        }
+        
+        .history-item:hover {
+            opacity: 0.9;
         }
         
         .history-item:active {
@@ -207,18 +213,32 @@
         // Переменные для управления скроллом
         let shouldScrollToBottom = true;
         let isUserScrolling = false;
+        let lastScrollPosition = 0;
         let scrollTimeout;
-        let lastTapTime = 0;
-        let lastTapY = 0;
 
         // Управление клавиатурой
         textInput.addEventListener('focus', () => {
             dismissArea.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${window.scrollY}px`;
         });
         
         dismissArea.addEventListener('click', () => {
             textInput.blur();
             dismissArea.style.display = 'none';
+            const scrollY = document.body.style.top;
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.overflow = '';
+            window.scrollTo(0, parseInt(scrollY || '0') * -1);
+        });
+        
+        textInput.addEventListener('blur', () => {
+            dismissArea.style.display = 'none';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.overflow = '';
         });
         
         // Отправка текста
@@ -266,6 +286,13 @@
                     });
                     shouldScrollToBottom = true;
                 }
+            }).catch(error => {
+                console.error("Ошибка при проверке настроек:", error);
+                currentRef.set({
+                    text: text,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                shouldScrollToBottom = true;
             });
         }
         
@@ -274,6 +301,7 @@
             clearTimeout(scrollTimeout);
             isUserScrolling = true;
             
+            // Определяем, находится ли пользователь внизу
             const isAtBottom = historyContainer.scrollHeight - historyContainer.scrollTop === historyContainer.clientHeight;
             shouldScrollToBottom = isAtBottom;
             
@@ -282,24 +310,12 @@
             }, 100);
         });
         
-        // Обработка кликов/тапов
-        historyContainer.addEventListener('click', (e) => {
-            const now = Date.now();
-            const y = e.clientY || (e.touches && e.touches[0].clientY);
-            
-            // Игнорируем быстрые двойные тапы (чтобы не мешали скроллу)
-            if (now - lastTapTime < 300 && Math.abs(y - lastTapY) < 10) {
-                return;
+        // Прокрутка к низу при необходимости
+        function scrollToBottomIfNeeded() {
+            if (shouldScrollToBottom && !isUserScrolling) {
+                historyContainer.scrollTop = historyContainer.scrollHeight;
             }
-            
-            lastTapTime = now;
-            lastTapY = y;
-            
-            const item = e.target.closest('.history-item');
-            if (item) {
-                restoreMessage(item.textContent);
-            }
-        });
+        }
         
         // Обработка истории
         currentRef.on('value', snapshot => {
@@ -320,8 +336,10 @@
                 });
             });
             
+            // Сортируем по времени (новые внизу)
             historyItems.sort((a, b) => a.timestamp - b.timestamp);
             
+            // Сохраняем текущий скролл
             const wasAtBottom = historyContainer.scrollHeight - historyContainer.scrollTop === historyContainer.clientHeight;
             
             historyContainer.innerHTML = '';
@@ -330,9 +348,26 @@
                 const historyItem = document.createElement('div');
                 historyItem.className = 'history-item';
                 historyItem.textContent = item.text;
+                historyItem.dataset.id = item.id;
+                
+                historyItem.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    restoreMessage(item.text);
+                });
+                
+                historyItem.addEventListener('touchstart', (e) => {
+                    e.currentTarget.style.opacity = '1';
+                }, { passive: true });
+                
+                historyItem.addEventListener('touchend', (e) => {
+                    e.currentTarget.style.opacity = '';
+                    restoreMessage(item.text);
+                }, { passive: true });
+                
                 historyContainer.appendChild(historyItem);
             });
             
+            // Прокручиваем к низу при первом открытии или если пользователь был внизу
             if (shouldScrollToBottom || wasAtBottom) {
                 setTimeout(() => {
                     historyContainer.scrollTop = historyContainer.scrollHeight;
