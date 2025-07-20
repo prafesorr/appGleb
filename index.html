@@ -310,7 +310,7 @@
 
     <script>
         // Версия приложения для обхода кеширования
-        const APP_VERSION = '6';
+        const APP_VERSION = '7';
         
         // Проверяем, нужно ли обновить страницу
         if (localStorage.getItem('appVersion') !== APP_VERSION) {
@@ -436,10 +436,10 @@
         function startIdleAnimations() {
             // Случайные анимации каждые 5-10 секунд
             setInterval(() => {
-                if (Math.random() > 0.1) {
+                if (Math.random() > 0.3) {
                     createFloatingEmoji();
                 }
-            }, 1500 + Math.random() * 1500);
+            }, 5000 + Math.random() * 5000);
         }
         
         // Инициализация
