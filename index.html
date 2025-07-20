@@ -77,6 +77,11 @@
             max-height: 30vh;
             overflow-y: auto;
             margin-bottom: 5px;
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .history-container::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
         }
         
         .history-item {
@@ -86,6 +91,11 @@
             padding: 2px 0;
             transition: all 0.3s ease;
             text-align: left;
+            cursor: pointer;
+        }
+        
+        .history-item:hover {
+            opacity: 0.9;
         }
         
         .current-text {
@@ -186,6 +196,9 @@
         const textInput = document.getElementById('textInput');
         const dismissArea = document.getElementById('dismissArea');
         
+        // Хранилище для истории
+        let historyItems = [];
+        
         // Фиксированное положение при открытии клавиатуры
         textInput.addEventListener('focus', () => {
             dismissArea.style.display = 'block';
@@ -215,7 +228,7 @@
         
         // Отправка текста
         function submitText() {
-            const newText = textInput.value.trim().toLowerCase(); // Преобразуем в нижний регистр
+            const newText = textInput.value.trim().toLowerCase();
             if (!newText) return;
             
             currentRef.once('value').then(snapshot => {
@@ -226,7 +239,7 @@
                     const user = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
                     
                     historyRef.push({
-                        text: oldText.toLowerCase(), // Сохраняем историю в нижнем регистре
+                        text: oldText.toLowerCase(),
                         timestamp: firebase.database.ServerValue.TIMESTAMP,
                         user_id: user.id || 'unknown',
                         username: user.username || 
@@ -236,7 +249,7 @@
                 }
                 
                 currentRef.set({
-                    text: newText, // Уже в нижнем регистре
+                    text: newText,
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
                 
@@ -256,25 +269,64 @@
             this.value = this.value.toLowerCase();
         });
         
+        // Восстановление старого сообщения по клику
+        function restoreMessage(text) {
+            currentRef.set({
+                text: text,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+        
         currentRef.on('value', snapshot => {
             const text = snapshot.val()?.text;
-            currentText.textContent = text ? text.toLowerCase() : ""; // Отображаем в нижнем регистре
+            currentText.textContent = text ? text.toLowerCase() : "";
         });
         
-        historyRef.limitToLast(5).on('value', snapshot => {
+        historyRef.limitToLast(50).on('value', snapshot => {
             historyContainer.innerHTML = '';
             
-            const historyItems = Object.values(snapshot.val() || {})
-                .sort((a, b) => b.timestamp - a.timestamp)
-                .map(item => item.text ? item.text.toLowerCase() : ''); // История в нижнем регистре
+            historyItems = Object.entries(snapshot.val() || {})
+                .sort((a, b) => b[1].timestamp - a[1].timestamp)
+                .map(([key, item]) => ({
+                    id: key,
+                    text: item.text ? item.text.toLowerCase() : '',
+                    timestamp: item.timestamp
+                }));
             
-            historyItems.forEach(text => {
-                const item = document.createElement('div');
-                item.className = 'history-item';
-                item.textContent = text;
-                historyContainer.appendChild(item);
+            historyItems.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.textContent = item.text;
+                historyItem.dataset.id = item.id;
+                historyItem.addEventListener('click', () => {
+                    restoreMessage(item.text);
+                });
+                historyContainer.appendChild(historyItem);
             });
         });
+        
+        // Прокрутка истории при касании
+        let startY;
+        let isScrolling = false;
+        
+        historyContainer.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+            isScrolling = true;
+        }, { passive: true });
+        
+        historyContainer.addEventListener('touchmove', (e) => {
+            if (!isScrolling) return;
+            const y = e.touches[0].clientY;
+            const diff = startY - y;
+            
+            if (Math.abs(diff) > 10) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        historyContainer.addEventListener('touchend', () => {
+            isScrolling = false;
+        }, { passive: true });
         
         textInput.focus();
     </script>
