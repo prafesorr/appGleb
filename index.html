@@ -7,9 +7,9 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Alexey Board</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?v=6"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=6"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js?v=6"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js?v=10"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js?v=10"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js?v=10"></script>
     <style>
         .light-theme {
             --button-color: #6C5CE7;
@@ -76,6 +76,7 @@
             width: 100%;
             position: relative;
             margin-bottom: 20px;
+            padding-left: 15px; /* Добавлено для сдвига вправо */
         }
         
         .fixed-name {
@@ -310,7 +311,7 @@
 
     <script>
         // Версия приложения для обхода кеширования
-        const APP_VERSION = '7';
+        const APP_VERSION = '10';
         
         // Проверяем, нужно ли обновить страницу
         if (localStorage.getItem('appVersion') !== APP_VERSION) {
@@ -405,7 +406,7 @@
 
         // Создаем анимированные эмодзи при отправке
         function createFloatingEmoji() {
-            const emojis = ['✨', '🌟', '💬', '🖋️', '📝', '💭'];
+            const emojis = ['✨', '🌟', '💬', '🖋️', '📝', '💭', '😈'];
             const emoji = emojis[Math.floor(Math.random() * emojis.length)];
             
             const element = document.createElement('div');
@@ -434,12 +435,12 @@
 
         // Периодические анимации внизу экрана
         function startIdleAnimations() {
-            // Случайные анимации каждые 5-10 секунд
+            // Случайные анимации каждые 2.5-5 секунд
             setInterval(() => {
                 if (Math.random() > 0.3) {
                     createFloatingEmoji();
                 }
-            }, 5000 + Math.random() * 5000);
+            }, 2500 + Math.random() * 2500);
         }
         
         // Инициализация
