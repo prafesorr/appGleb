@@ -145,21 +145,9 @@
             outline: none;
             text-transform: lowercase;
         }
-        
-        .keyboard-dismiss-area {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 10;
-            display: none;
-        }
     </style>
 </head>
 <body>
-    <div class="keyboard-dismiss-area" id="dismissArea"></div>
-    
     <div class="main-content">
         <div class="content-wrapper">
             <div class="fixed-name">Глеб</div>
@@ -208,7 +196,6 @@
         const currentText = document.getElementById('currentText');
         const historyContainer = document.getElementById('historyContainer');
         const textInput = document.getElementById('textInput');
-        const dismissArea = document.getElementById('dismissArea');
         
         // Переменные для управления скроллом
         let shouldScrollToBottom = true;
@@ -216,31 +203,6 @@
         let lastScrollPosition = 0;
         let scrollTimeout;
 
-        // Управление клавиатурой
-        textInput.addEventListener('focus', () => {
-            dismissArea.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-            document.body.style.position = 'fixed';
-            document.body.style.top = `-${window.scrollY}px`;
-        });
-        
-        dismissArea.addEventListener('click', () => {
-            textInput.blur();
-            dismissArea.style.display = 'none';
-            const scrollY = document.body.style.top;
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.overflow = '';
-            window.scrollTo(0, parseInt(scrollY || '0') * -1);
-        });
-        
-        textInput.addEventListener('blur', () => {
-            dismissArea.style.display = 'none';
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.overflow = '';
-        });
-        
         // Отправка текста
         function submitText() {
             const newText = textInput.value.trim().toLowerCase();
@@ -267,7 +229,6 @@
                 });
                 
                 textInput.value = '';
-                textInput.blur();
                 shouldScrollToBottom = true;
             });
         }
