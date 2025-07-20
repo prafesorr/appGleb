@@ -87,6 +87,7 @@
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
+            touch-action: pan-y;
         }
         
         .history-container::-webkit-scrollbar {
@@ -215,6 +216,8 @@
         let isUserScrolling = false;
         let lastScrollPosition = 0;
         let scrollTimeout;
+        let touchStartY = 0;
+        let isScrolling = false;
 
         // Управление клавиатурой
         textInput.addEventListener('focus', () => {
@@ -310,6 +313,26 @@
             }, 100);
         });
         
+        // Обработка касаний для скролла
+        historyContainer.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+            isScrolling = false;
+        }, { passive: true });
+        
+        historyContainer.addEventListener('touchmove', (e) => {
+            isScrolling = true;
+        }, { passive: true });
+        
+        historyContainer.addEventListener('touchend', (e) => {
+            if (!isScrolling) {
+                const target = e.target.closest('.history-item');
+                if (target) {
+                    restoreMessage(target.textContent);
+                }
+            }
+            isScrolling = false;
+        }, { passive: true });
+        
         // Прокрутка к низу при необходимости
         function scrollToBottomIfNeeded() {
             if (shouldScrollToBottom && !isUserScrolling) {
@@ -349,13 +372,6 @@
                 historyItem.className = 'history-item';
                 historyItem.textContent = item.text;
                 historyItem.dataset.id = item.id;
-                
-                // Изменено: используем только клик для восстановления сообщения
-                historyItem.addEventListener('click', (e) => {
-                    if (!isUserScrolling) {
-                        restoreMessage(item.text);
-                    }
-                });
                 
                 historyContainer.appendChild(historyItem);
             });
