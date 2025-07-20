@@ -32,7 +32,6 @@
             color: var(--tg-theme-text-color, #000);
             -webkit-text-size-adjust: 100%;
             position: fixed;
-            touch-action: pan-y;
         }
         
         .main-content {
@@ -76,7 +75,6 @@
             max-height: 30vh;
             overflow: hidden;
             margin-bottom: 5px;
-            touch-action: pan-y;
         }
         
         .history-container {
@@ -101,19 +99,12 @@
             padding: 8px 0;
             transition: all 0.3s ease;
             text-align: left;
-            cursor: pointer;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: manipulation;
-        }
-        
-        .history-item:hover {
-            opacity: 0.9;
         }
         
         .history-item:active {
             opacity: 1;
-            transform: scale(0.98);
         }
         
         .current-text {
@@ -214,10 +205,9 @@
         // Переменные для управления скроллом
         let shouldScrollToBottom = true;
         let isUserScrolling = false;
-        let lastScrollPosition = 0;
         let scrollTimeout;
         let touchStartY = 0;
-        let isScrolling = false;
+        let isTouchMoving = false;
 
         // Управление клавиатурой
         textInput.addEventListener('focus', () => {
@@ -304,7 +294,6 @@
             clearTimeout(scrollTimeout);
             isUserScrolling = true;
             
-            // Определяем, находится ли пользователь внизу
             const isAtBottom = historyContainer.scrollHeight - historyContainer.scrollTop === historyContainer.clientHeight;
             shouldScrollToBottom = isAtBottom;
             
@@ -313,24 +302,26 @@
             }, 100);
         });
         
-        // Обработка касаний для скролла
+        // Обработка касаний для скролла и кликов
         historyContainer.addEventListener('touchstart', (e) => {
             touchStartY = e.touches[0].clientY;
-            isScrolling = false;
+            isTouchMoving = false;
         }, { passive: true });
         
         historyContainer.addEventListener('touchmove', (e) => {
-            isScrolling = true;
+            if (Math.abs(e.touches[0].clientY - touchStartY) > 5) {
+                isTouchMoving = true;
+            }
         }, { passive: true });
         
         historyContainer.addEventListener('touchend', (e) => {
-            if (!isScrolling) {
+            if (!isTouchMoving) {
                 const target = e.target.closest('.history-item');
                 if (target) {
                     restoreMessage(target.textContent);
                 }
             }
-            isScrolling = false;
+            isTouchMoving = false;
         }, { passive: true });
         
         // Прокрутка к низу при необходимости
@@ -359,10 +350,8 @@
                 });
             });
             
-            // Сортируем по времени (новые внизу)
             historyItems.sort((a, b) => a.timestamp - b.timestamp);
             
-            // Сохраняем текущий скролл
             const wasAtBottom = historyContainer.scrollHeight - historyContainer.scrollTop === historyContainer.clientHeight;
             
             historyContainer.innerHTML = '';
@@ -372,11 +361,9 @@
                 historyItem.className = 'history-item';
                 historyItem.textContent = item.text;
                 historyItem.dataset.id = item.id;
-                
                 historyContainer.appendChild(historyItem);
             });
             
-            // Прокручиваем к низу при первом открытии или если пользователь был внизу
             if (shouldScrollToBottom || wasAtBottom) {
                 setTimeout(() => {
                     historyContainer.scrollTop = historyContainer.scrollHeight;
