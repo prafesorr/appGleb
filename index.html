@@ -215,26 +215,33 @@
         function submitText() {
             const newText = textInput.value.trim();
             if (!newText) return;
-            
+    
             currentRef.once('value').then(snapshot => {
                 const oldText = snapshot.val()?.text;
-                
+        
                 if (oldText) {
+                    // Получаем информацию о пользователе из Telegram WebApp
+                    const user = window.Telegram?.WebApp?.initDataUnsafe?.user || {};
+            
                     historyRef.push({
                         text: oldText,
-                        timestamp: firebase.database.ServerValue.TIMESTAMP
-                    });
-                }
-                
-                currentRef.set({
-                    text: newText,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
-                
-                textInput.value = '';
-                textInput.blur();
+                    timestamp: firebase.database.ServerValue.TIMESTAMP,
+                    user_id: user.id || 'unknown',
+                    username: user.username || 
+                         (user.first_name + (user.last_name ? ' ' + user.last_name : '')) || 
+                         'anonymous'
             });
         }
+        
+        currentRef.set({
+            text: newText,
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        });
+        
+        textInput.value = '';
+        textInput.blur();
+    });
+}
         
         textInput.addEventListener('keypress', e => e.key === 'Enter' && submitText());
         
