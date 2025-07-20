@@ -76,16 +76,19 @@
             max-height: 30vh;
             overflow: hidden;
             margin-bottom: 5px;
+            touch-action: pan-y;
         }
         
         .history-container {
             display: flex;
             flex-direction: column;
             max-height: 30vh;
-            overflow-y: auto;
+            overflow-y: scroll;
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
+            transform: translateZ(0); /* Аппаратное ускорение */
+            will-change: transform; /* Подготовка к анимации */
         }
         
         .history-container::-webkit-scrollbar {
@@ -271,7 +274,7 @@
         function restoreMessage(text) {
             settingsRef.child('enable_history_activation').once('value').then(snapshot => {
                 const isEnabled = snapshot.val();
-                if (isEnabled !== false) { // По умолчанию разрешено, если настройка не установлена
+                if (isEnabled !== false) {
                     currentRef.set({
                         text: text,
                         timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -279,7 +282,6 @@
                 }
             }).catch(error => {
                 console.error("Ошибка при проверке настроек:", error);
-                // Разрешаем по умолчанию, если произошла ошибка
                 currentRef.set({
                     text: text,
                     timestamp: firebase.database.ServerValue.TIMESTAMP
@@ -293,10 +295,29 @@
             currentText.textContent = text ? text.toLowerCase() : "";
         });
         
+        // Функция для принудительной активации скролла
+        function activateScroll() {
+            historyContainer.style.overflowY = 'scroll';
+            setTimeout(() => {
+                historyContainer.scrollTop = 1;
+                setTimeout(() => {
+                    historyContainer.scrollTop = 0;
+                }, 50);
+            }, 50);
+        }
+        
+        // Инициализация скролла при загрузке
+        document.addEventListener('DOMContentLoaded', () => {
+            activateScroll();
+        });
+        
         historyRef.limitToLast(50).on('value', snapshot => {
             historyContainer.innerHTML = '';
             
-            if (!snapshot.exists()) return;
+            if (!snapshot.exists()) {
+                activateScroll();
+                return;
+            }
             
             const historyItems = [];
             snapshot.forEach(childSnapshot => {
@@ -308,7 +329,6 @@
                 });
             });
             
-            // Сортируем по времени (новые внизу)
             historyItems.sort((a, b) => a.timestamp - b.timestamp);
             
             historyItems.forEach(item => {
@@ -334,8 +354,11 @@
                 historyContainer.appendChild(historyItem);
             });
             
-            // Автоматическая прокрутка к новым сообщениям (вниз)
-            historyContainer.scrollTop = historyContainer.scrollHeight;
+            activateScroll();
+            
+            setTimeout(() => {
+                historyContainer.scrollTop = historyContainer.scrollHeight;
+            }, 100);
         });
         
         // Инициализация
